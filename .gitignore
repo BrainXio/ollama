@@ -1,0 +1,16 @@
+# Ignore environment file with sensitive data
+.env
+
+# Ignore Docker-related files
+*.log
+docker-compose.override.yml
+
+# Ignore editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Ignore temporary files
+*.tmp
+*.bak
