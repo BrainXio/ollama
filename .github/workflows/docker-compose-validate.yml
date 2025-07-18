@@ -1,5 +1,12 @@
 ---
-# Validates Docker Compose configuration
+name: Validate Docker Compose
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -12,18 +19,29 @@ jobs:
           sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
 
-      - name: Validate Docker Compose file
+      - name: Validate CPU profile
         run: |
           if [ -f docker-compose.yml ]; then
-            docker-compose -f docker-compose.yml config
+            docker-compose -f docker-compose.yml --profile cpu config
           else
-            echo "docker-compose.yml not found, skipping validation."
+            echo "docker-compose.yml not found, skipping CPU profile validation."
+            exit 1
           fi
 
-name: Validate Docker Compose
+      - name: Validate GPU NVIDIA profile
+        run: |
+          if [ -f docker-compose.yml ]; then
+            docker-compose -f docker-compose.yml --profile gpu-nvidia config
+          else
+            echo "docker-compose.yml not found, skipping GPU NVIDIA profile validation."
+            exit 1
+          fi
 
-on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
+      - name: Validate GPU AMD profile
+        run: |
+          if [ -f docker-compose.yml ]; then
+            docker-compose -f docker-compose.yml --profile gpu-amd config
+          else
+            echo "docker-compose.yml not found, skipping GPU AMD profile validation."
+            exit 1
+          fi
