@@ -45,3 +45,57 @@ jobs:
             echo "docker-compose.yml not found, skipping GPU AMD profile validation."
             exit 1
           fi
+
+      - name: Validate CPU with local ports
+        run: |
+          if [ -f docker-compose.yml ] && [ -f docker-compose.extend.local-ports.yml ]; then
+            docker-compose -f docker-compose.yml -f docker-compose.extend.local-ports.yml --profile cpu config
+          else
+            echo "One or both Compose files not found, skipping CPU with local ports validation."
+            exit 1
+          fi
+
+      - name: Validate GPU NVIDIA with local ports
+        run: |
+          if [ -f docker-compose.yml ] && [ -f docker-compose.extend.local-ports.yml ]; then
+            docker-compose -f docker-compose.yml -f docker-compose.extend.local-ports.yml --profile gpu-nvidia config
+          else
+            echo "One or both Compose files not found, skipping GPU NVIDIA with local ports validation."
+            exit 1
+          fi
+
+      - name: Validate GPU AMD with local ports
+        run: |
+          if [ -f docker-compose.yml ] && [ -f docker-compose.extend.local-ports.yml ]; then
+            docker-compose -f docker-compose.yml -f docker-compose.extend.local-ports.yml --profile gpu-amd config
+          else
+            echo "One or both Compose files not found, skipping GPU AMD with local ports validation."
+            exit 1
+          fi
+
+      - name: Validate CPU with Tailscaled
+        run: |
+          if [ -f docker-compose.yml ] && [ -f docker-compose.extend.tailscaled.yml ]; then
+            docker-compose -f docker-compose.yml -f docker-compose.extend.tailscaled.yml --profile cpu --profile tailscaled config
+          else
+            echo "One or both Compose files not found, skipping CPU with Tailscaled validation."
+            exit 1
+          fi
+
+      - name: Validate GPU NVIDIA with Tailscaled
+        run: |
+          if [ -f docker-compose.yml ] && [ -f docker-compose.extend.tailscaled.yml ]; then
+            docker-compose -f docker-compose.yml -f docker-compose.extend.tailscaled.yml --profile gpu-nvidia --profile tailscaled config
+          else
+            echo "One or both Compose files not found, skipping GPU NVIDIA with Tailscaled validation."
+            exit 1
+          fi
+
+      - name: Validate GPU AMD with Tailscaled
+        run: |
+          if [ -f docker-compose.yml ] && [ -f docker-compose.extend.tailscaled.yml ]; then
+            docker-compose -f docker-compose.yml -f docker-compose.extend.tailscaled.yml --profile gpu-amd --profile tailscaled config
+          else
+            echo "One or both Compose files not found, skipping GPU AMD with Tailscaled validation."
+            exit 1
+          fi

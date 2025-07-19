@@ -1,0 +1,44 @@
+---
+services:
+  ollama-cpu:
+    depends_on:
+      - tailscaled
+    network_mode: service:tailscaled
+  ollama-gpu:
+    depends_on:
+      - tailscaled
+    network_mode: service:tailscaled
+  ollama-gpu-amd:
+    depends_on:
+      - tailscaled
+    network_mode: service:tailscaled
+  tailscaled:
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    container_name: ollama-tailscale${NAME_SUFFIX:-}
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tailscale_authkey
+      - TS_HOSTNAME=ollama${NAME_SUFFIX:-}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    image: tailscale/tailscale:stable
+    ports:
+      - "${OLLAMA_HOST_PORT:-127.0.0.1:11434}:11434"
+    restart: unless-stopped
+    secrets:
+      - tailscale_authkey
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    # Note: network_mode: service:tailscaled shares the Tailscale container's network stack,
+    # making Ollama accessible via the Tailscale IP or hostname (e.g., ollama-small.yourtailnet.ts.net).
+
+secrets:
+  tailscale_authkey:
+    file: secrets/tailscale_authkey.txt
+
+volumes:
+  tailscale_state:
