@@ -34,7 +34,7 @@ Ollama is an open-source platform for running large language models locally. It 
    cp .env.example .env
    ```
 
-   Edit `.env` to customize Ollama settings (e.g., `OLLAMA_HOST`, `OLLAMA_MODELS`). Defaults are beginner-friendly.
+   Edit `.env` to customize settings (e.g., `NAME_SUFFIX`, `OLLAMA_BASE_MODEL`, `OLLAMA_HOST`). Defaults are beginner-friendly. The most commonly changed settings are listed first in `.env.example`.
 
 3) Configure Tailscale (Optional)
 
@@ -54,14 +54,14 @@ Ollama is an open-source platform for running large language models locally. It 
 
    Choose a profile and networking mode based on your hardware:
 
-   - CPU (local ports): `docker compose --profile cpu -f docker-compose.yml -f docker-compose.extend.local-ports.yml up -d`
-   - NVIDIA GPU (local ports): `docker compose --profile gpu-nvidia -f docker-compose.yml -f docker-compose.extend.local-ports.yml up -d`
-   - AMD GPU (local ports): `docker compose --profile gpu-amd -f docker-compose.yml -f docker-compose.extend.local-ports.yml up -d`
-   - CPU (with Tailscale): `docker compose --profile cpu --profile tailscaled -f docker-compose.yml -f docker-compose.extend.tailscaled.yml up -d`
-   - NVIDIA GPU (with Tailscale): `docker compose --profile gpu-nvidia --profile tailscaled -f docker-compose.yml -f docker-compose.extend.tailscaled.yml up -d`
-   - AMD GPU (with Tailscale): `docker compose --profile gpu-amd --profile tailscaled -f docker-compose.yml -f docker-compose.extend.tailscaled.yml up -d`
+   - CPU (local ports): `docker compose -f docker-compose.yml -f docker-compose.extend.local-ports.yml --profile cpu up -d`
+   - NVIDIA GPU (local ports): `docker compose -f docker-compose.yml -f docker-compose.extend.local-ports.yml --profile gpu-nvidia up -d`
+   - AMD GPU (local ports): `docker compose -f docker-compose.yml -f docker-compose.extend.local-ports.yml --profile gpu-amd up -d`
+   - CPU (with Tailscale): `docker compose -f docker-compose.yml -f docker-compose.extend.tailscaled.yml --profile cpu up -d`
+   - NVIDIA GPU (with Tailscale): `docker compose -f docker-compose.yml -f docker-compose.extend.tailscaled.yml --profile gpu-nvidia up -d`
+   - AMD GPU (with Tailscale): `docker compose -f docker-compose.yml -f docker-compose.extend.tailscaled.yml --profile gpu-amd up -d`
 
-   This starts Ollama, pulls initial models (configured in `.env`), and applies the chosen networking mode.
+   This starts Ollama, pulls initial models (configured in `.env`), and applies the chosen networking mode. If `NAME_SUFFIX` is set (e.g., `-small`), containers will be named like `ollama-small`, `ollama-init-small`, and `ollama-tailscale-small`.
 
 5) Access Ollama
 
@@ -73,10 +73,10 @@ Ollama is an open-source platform for running large language models locally. It 
 
      If you set a different `OLLAMA_HOST_PORT` in `.env`, use that port (e.g., `curl http://localhost:YOUR_PORT/api/tags`).
 
-   - With Tailscale: Find the Tailscale IP or MagicDNS hostname (e.g., `ollama-server.yourtailnet.ts.net`) in the Tailscale admin console (Machines page). Test it with:
+   - With Tailscale: Find the Tailscale hostname (e.g., `ollama-small.yourtailnet.ts.net`, based on `NAME_SUFFIX`) in the Tailscale admin console (Machines page). Test it with:
 
      ```bash
-     curl http://ollama-server.yourtailnet.ts.net:11434/api/tags
+     curl http://ollama-small.yourtailnet.ts.net:11434/api/tags
      ```
 
 6) Linting (Optional)
@@ -94,7 +94,7 @@ Ollama is an open-source platform for running large language models locally. It 
 - `LICENSE`: MIT License.
 - `.github/`: GitHub workflows (e.g., CI for linting and validation).
 - `.yamllint.yml`: YAML linting configuration.
-- `.env.example`: Template for environment variables.
+- `.env.example`: Template for environment variables, ordered by likelihood of use.
 - `CHANGELOG.md`: Tracks project updates.
 - `docker-compose.extend.local-ports.yml`: Optional override for local port access.
 - `docker-compose.extend.tailscaled.yml`: Optional override for Tailscale networking.
