@@ -1,6 +1,9 @@
 # Ignore environment file with sensitive data
 .env
 
+# Ignore secrets directory with sensitive data
+secrets/
+
 # Ignore Docker-related files
 *.log
 docker-compose.override.yml

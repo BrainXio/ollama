@@ -4,8 +4,8 @@ x-init-ollama: &init-ollama
     - -c
     - |
       sleep 3;
-      OLLAMA_HOST=ollama:11434 ollama pull $${OLLAMA_BASE_MODEL:-smollm2};
-      OLLAMA_HOST=ollama:11434 ollama pull $${OLLAMA_EMBEDDING_MODEL:nomic-embed-text};
+      OLLAMA_HOST=ollama:11434 ollama pull ${OLLAMA_BASE_MODEL:-smollm2};
+      OLLAMA_HOST=ollama:11434 ollama pull ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text};
   container_name: ollama-init
   entrypoint: /bin/sh
   image: ollama/ollama:latest
@@ -19,11 +19,7 @@ x-ollama: &service-ollama
     - OLLAMA_HOST=${OLLAMA_HOST:-0.0.0.0:11434}
     - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
     - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
-  expose:
-    - 11434/tcp
   image: ollama/ollama:latest
-  ports:
-    - "${OLLAMA_HOST_PORT:-11434}:11434"
   restart: unless-stopped
   volumes:
     - ollama_storage:/root/.ollama
@@ -33,7 +29,6 @@ services:
     <<: *service-ollama
     profiles:
       - cpu
-
   ollama-gpu:
     <<: *service-ollama
     deploy:
@@ -47,7 +42,6 @@ services:
     image: ollama/ollama:latest
     profiles:
       - gpu-nvidia
-
   ollama-gpu-amd:
     <<: *service-ollama
     devices:
@@ -56,14 +50,12 @@ services:
     image: ollama/ollama:rocm
     profiles:
       - gpu-amd
-
   ollama-init-pull-cpu:
     <<: *init-ollama
     depends_on:
       - ollama-cpu
     profiles:
       - cpu
-
   ollama-init-pull-gpu:
     <<: *init-ollama
     depends_on:
@@ -71,7 +63,6 @@ services:
     image: ollama/ollama:latest
     profiles:
       - gpu-nvidia
-
   ollama-init-pull-gpu-amd:
     <<: *init-ollama
     depends_on:
