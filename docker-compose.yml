@@ -5,7 +5,7 @@ x-init-ollama: &init-ollama
     - |
       sleep 3;
       OLLAMA_HOST=ollama${NAME_SUFFIX:-}:11434 ollama pull $${OLLAMA_BASE_MODEL:-smollm2};
-      OLLAMA_HOST=ollama${NAME_SUFFIX:-}:11434 ollama pull $${OLLAMA_INIT_MODEL:-nomic-embed-text};
+      OLLAMA_HOST=ollama${NAME_SUFFIX:-}:11434 ollama pull $${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text};
   container_name: ollama-init${NAME_SUFFIX:-}
   entrypoint: /bin/sh
   image: ollama/ollama:latest

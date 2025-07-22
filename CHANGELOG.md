@@ -3,7 +3,7 @@
 ## [0.1.0] - 2025-07-18
 
 - Initial release: Docker Compose setup for Ollama with CPU, NVIDIA GPU, and AMD GPU support. Ready to power your AI adventures!
-- Added `.env.example` with documented variables, including `OLLAMA_BASE_MODEL` and `OLLAMA_INIT_MODEL` for picking your go-to models.
+- Added `.env.example` with documented variables, including `OLLAMA_BASE_MODEL` and `OLLAMA_EMBEDDING_MODEL` for picking your go-to models.
 - Included YAML linting and GitHub workflows for validation, keeping our YAML crisp and clean.
 - Added `docker-compose.extend.tailscaled.yml` for Tailscale integration, bringing secure tailnet access to Ollama with no public port exposure.
 - Added `docker-compose.extend.local-ports.yml` to enable smooth local port access, moving ports from base `docker-compose.yml` to avoid Tailscale conflicts.
