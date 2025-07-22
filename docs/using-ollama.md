@@ -13,7 +13,7 @@ Ollama is like a friendly toolbox for running AI models on your own computer, wi
 
 ## Tips for Using Ollama in This Repo
 - **Start Simple**: Use the commands in README.md to launch Ollama with your hardware (CPU, NVIDIA, or AMD).
-- **Customize Models**: Edit `OLLAMA_BASE_MODEL` and `OLLAMA_INIT_MODEL` in `.env` to try different models.
+- **Customize Models**: Edit `OLLAMA_BASE_MODEL` and `OLLAMA_EMBEDDING_MODEL` in `.env` to try different models.
 - **Access the API**: Once running, test with `curl http://localhost:11434/api/tags` to list loaded models.
 - **Integrate with Tailscale**: For remote access, add `docker-compose.extend.tailscaled.yml` as described in README.md or docs/using-tailscale.md.
 
