@@ -1,0 +1,55 @@
+---
+name: ollama
+networks:
+  traefik-net:
+    external: true
+secrets:
+  tsauthkey:
+    file: ${TSAUTHKEY_PATH:-~/.secrets/ollama-tsauthkey.key}
+services:
+  ollama-cpu:
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+  ollama-gpu:
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+  ollama-gpu-amd:
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+  tailscale:
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    container_name: ollama-tailscale${NAME_SUFFIX:-}-ts
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tsauthkey
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    hostname: ${CONTAINER_NAME:-ollama}${CONTAINER_NAME_SUFFIX:-''}
+    image: tailscale/tailscale:stable
+    labels:
+      - "traefik.docker.network=traefik-net"
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.ip-whitelist.ipallowlist.sourcerange=${IP_WHITELIST:-0.0.0.0/0}"
+      - "traefik.http.middlewares.ollama-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.ollama.entrypoints=web"
+      - "traefik.http.routers.ollama.middlewares=ollama-https-redirect"
+      - "traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN}`)"
+      - "traefik.http.routers.ollama-secure.entrypoints=websecure"
+      - "traefik.http.routers.ollama-secure.rule=Host(`ollama.${DOMAIN}`)"
+      - "traefik.http.routers.ollama-secure.service=ollama"
+      - "traefik.http.routers.ollama-secure.tls=true"
+      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
+    restart: unless-stopped
+    secrets:
+      - tsauthkey
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+
+volumes:
+  tailscale_state:

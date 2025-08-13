@@ -1,28 +1,27 @@
----
 x-init-ollama: &init-ollama
   command:
     - -c
     - |
       sleep 3;
-      OLLAMA_HOST=ollama${NAME_SUFFIX:-}:11434 ollama pull $${OLLAMA_BASE_MODEL:-smollm2};
-      OLLAMA_HOST=ollama${NAME_SUFFIX:-}:11434 ollama pull $${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text};
+      OLLAMA_HOST=${CONTAINER_NAME:-ollama}${NAME_SUFFIX:-}:11434;
+      ollama pull $${OLLAMA_BASE_MODEL:-smollm2};
+      ollama pull $${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text};
   container_name: ollama-init${NAME_SUFFIX:-}
   entrypoint: /bin/sh
   image: ollama/ollama:latest
   volumes:
-    - ollama_storage:/root/.ollama
+    - ./ollama_data:/root/.ollama
 
 x-ollama: &service-ollama
-  container_name: ollama${NAME_SUFFIX:-}
+  container_name: ${CONTAINER_NAME:-ollama}${NAME_SUFFIX:-}
   environment:
     - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
-    - OLLAMA_HOST=${OLLAMA_HOST:-0.0.0.0:11434}
     - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
     - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
   image: ollama/ollama:latest
   restart: unless-stopped
   volumes:
-    - ollama_storage:/root/.ollama
+    - ./ollama_data:/root/.ollama
 
 services:
   ollama-cpu:
@@ -70,6 +69,4 @@ services:
     image: ollama/ollama:rocm
     profiles:
       - gpu-amd
-
-volumes:
-  ollama_storage:
+      

@@ -1,0 +1,14 @@
+---
+services:
+  ollama-cpu:
+    volumes:
+      - ollama-data:/root/.ollama
+  ollama-gpu:
+    volumes:
+      - ollama-data:/root/.ollama
+  ollama-gpu-amd:
+    volumes:
+      - ollama-data:/root/.ollama
+
+volumes:
+  ollama-data:

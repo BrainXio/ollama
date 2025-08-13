@@ -1,0 +1,39 @@
+---
+name: ollama
+secrets:
+  tsauthkey:
+    file: ${TSAUTHKEY_PATH:-~/.secrets/ollama-tsauthkey.key}
+services:
+  ollama-cpu:
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+  ollama-gpu:
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+  ollama-gpu-amd:
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+  tailscale:
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    container_name: ${CONTAINER_NAME:-ollama}${CONTAINER_NAME_SUFFIX:-''}-ts
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tsauthkey
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    hostname: ${CONTAINER_NAME:-ollama}${CONTAINER_NAME_SUFFIX:-''}
+    image: tailscale/tailscale:stable
+    restart: unless-stopped
+    secrets:
+      - tsauthkey
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+
+volumes:
+  tailscale_state:
