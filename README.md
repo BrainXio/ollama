@@ -40,6 +40,9 @@ This repository contains the configuration and documentation for deploying Ollam
 ├── docker-compose.add.tailscale.yml # Adds Tailscale networking
 ├── docker-compose.add.traefik.yml  # Adds Traefik routing
 ├── docker-compose.add.traefik-tailscale.yml # Combines Traefik with Tailscale
+├── docs/
+│   ├── using-ollama.md            # Guide for using Ollama
+│   ├── using-tailscale.md         # Guide for Tailscale setup
 ├── .env.example                    # Environment variable template
 ├── .gitignore                      # Ignores sensitive files
 ├── .yamllint.yml                   # YAML linting configuration

@@ -1,20 +1,21 @@
 # Using Ollama
 
-Ollama is like a friendly toolbox for running AI models on your own computer, without needing fancy cloud services. It's open-source, which means anyone can peek at how it works or make it better.
+Ollama is an open-source platform for running AI models locally, supporting CPU and GPU acceleration for tasks like text generation and embeddings.
 
 ## What Can Ollama Do?
-- Run popular AI models like Llama, Qwen, or Gemma right on your machine.
-- Use your computer's GPU (if you have one) to make things faster.
-- Chat with models, generate text, or even build custom apps.
+- Run models like Llama, Qwen, or Gemma on your machine.
+- Leverage GPU (NVIDIA/AMD) for faster processing.
+- Build chatbots, generate text, or integrate with apps via API.
 
 ## Official Resources
-- **GitHub Repository**: The main home for Ollama's code is at github.com/ollama/ollama. You can find the source code, report bugs, or see what's new there.
-- **Model Registry**: Ollama models are hosted at registry.ollama.ai, where you can pull them from. Browse the library at ollama.com/library to see available models like Llama 3.2 or Qwen 2.5.
+- **GitHub**: [github.com/ollama/ollama](https://github.com/ollama/ollama) for source code and issues.
+- **Model Registry**: Browse models at [ollama.com/library](https://ollama.com/library), pull from [registry.ollama.ai](https://registry.ollama.ai).
 
-## Tips for Using Ollama in This Repo
-- **Start Simple**: Use the commands in README.md to launch Ollama with your hardware (CPU, NVIDIA, or AMD).
-- **Customize Models**: Edit `OLLAMA_BASE_MODEL` and `OLLAMA_EMBEDDING_MODEL` in `.env` to try different models.
-- **Access the API**: Once running, test with `curl http://localhost:11434/api/tags` to list loaded models.
-- **Integrate with Tailscale**: For remote access, add `docker-compose.extend.tailscaled.yml` as described in README.md or docs/using-tailscale.md.
+## Tips for Using Ollama
+- **Start**: Follow `README.md` to launch with CPU, NVIDIA GPU, or AMD GPU profiles.
+- **Customize Models**: Set `OLLAMA_BASE_MODEL` and `OLLAMA_EMBEDDING_MODEL` in `.env` (e.g., `qwen2.5:7b-instruct-q4_K_M`, `nomic-embed-text`).
+- **Access API**: Test with `curl http://localhost:11434/api/tags` (use `OLLAMA_HOST_PORT` if customized).
+- **Secure Remote Access**: Use `docker-compose.add.tailscale.yml` or `docker-compose.add.traefik-tailscale.yml` (see [Using Tailscale](using-tailscale.md)).
+- **Volume Options**: Default local bind (`./ollama_data`) or Docker volume (`ollama-data`) with `docker-compose.add.volume.yml`.
 
-For more on Ollama, visit ollama.com or their GitHub. If you're new, start with their quickstart guide—it's super easy!
+For more, visit [ollama.com](https://ollama.com) or their [quickstart guide](https://ollama.com/docs).
