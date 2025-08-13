@@ -1,0 +1,54 @@
+---
+networks:
+  traefik-net:
+    external: true
+
+services:
+  ollama-cpu:
+    labels:
+      - "traefik.docker.network=traefik-net"
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.ip-whitelist.ipallowlist.sourcerange=${IP_WHITELIST:-0.0.0.0/0}"
+      - "traefik.http.middlewares.ollama-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.ollama.entrypoints=web"
+      - "traefik.http.routers.ollama.middlewares=ollama-https-redirect"
+      - "traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN}`)"
+      - "traefik.http.routers.ollama-secure.entrypoints=websecure"
+      - "traefik.http.routers.ollama-secure.rule=Host(`ollama.${DOMAIN}`)"
+      - "traefik.http.routers.ollama-secure.service=ollama"
+      - "traefik.http.routers.ollama-secure.tls=true"
+      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
+    networks:
+      - traefik-net
+  ollama-gpu:
+    labels:
+      - "traefik.docker.network=traefik-net"
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.ip-whitelist.ipallowlist.sourcerange=${IP_WHITELIST:-0.0.0.0/0}"
+      - "traefik.http.middlewares.ollama-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.ollama.entrypoints=web"
+      - "traefik.http.routers.ollama.middlewares=ollama-https-redirect"
+      - "traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN}`)"
+      - "traefik.http.routers.ollama-secure.entrypoints=websecure"
+      - "traefik.http.routers.ollama-secure.rule=Host(`ollama.${DOMAIN}`)"
+      - "traefik.http.routers.ollama-secure.service=ollama"
+      - "traefik.http.routers.ollama-secure.tls=true"
+      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
+    networks:
+      - traefik-net
+  ollama-gpu-amd:
+    labels:
+      - "traefik.docker.network=traefik-net"
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.ip-whitelist.ipallowlist.sourcerange=${IP_WHITELIST:-0.0.0.0/0}"
+      - "traefik.http.middlewares.ollama-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.ollama.entrypoints=web"
+      - "traefik.http.routers.ollama.middlewares=ollama-https-redirect"
+      - "traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN}`)"
+      - "traefik.http.routers.ollama-secure.entrypoints=websecure"
+      - "traefik.http.routers.ollama-secure.rule=Host(`ollama.${DOMAIN}`)"
+      - "traefik.http.routers.ollama-secure.service=ollama"
+      - "traefik.http.routers.ollama-secure.tls=true"
+      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
+    networks:
+      - traefik-net

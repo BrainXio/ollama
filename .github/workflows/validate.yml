@@ -1,0 +1,108 @@
+---
+name: Validate Docker Compose
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Create traefik-net network
+        run: |
+          docker network create --driver bridge traefik-net || true
+
+      - name: Validate base configuration (CPU)
+        if: hashFiles('docker-compose.yml') != ''
+        run: docker-compose -f docker-compose.yml --profile cpu config
+
+      - name: Validate base configuration (GPU NVIDIA)
+        if: hashFiles('docker-compose.yml') != ''
+        run: docker-compose -f docker-compose.yml --profile gpu-nvidia config
+
+      - name: Validate base configuration (GPU AMD)
+        if: hashFiles('docker-compose.yml') != ''
+        run: docker-compose -f docker-compose.yml --profile gpu-amd config
+
+      - name: Validate with ports (CPU)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.ports.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.ports.yml --profile cpu config
+
+      - name: Validate with ports (GPU NVIDIA)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.ports.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.ports.yml --profile gpu-nvidia config
+
+      - name: Validate with ports (GPU AMD)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.ports.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.ports.yml --profile gpu-amd config
+
+      - name: Validate with volume (CPU)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.volume.yml --profile cpu config
+
+      - name: Validate with volume (GPU NVIDIA)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.volume.yml --profile gpu-nvidia config
+
+      - name: Validate with volume (GPU AMD)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.volume.yml --profile gpu-amd config
+
+      - name: Validate with Tailscale (CPU)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.tailscale.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.tailscale.yml --profile cpu config
+
+      - name: Validate with Tailscale (GPU NVIDIA)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.tailscale.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.tailscale.yml --profile gpu-nvidia config
+
+      - name: Validate with Tailscale (GPU AMD)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.tailscale.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.tailscale.yml --profile gpu-amd config
+
+      - name: Validate with Traefik (CPU)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik.yml --profile cpu config
+
+      - name: Validate with Traefik (GPU NVIDIA)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik.yml --profile gpu-nvidia config
+
+      - name: Validate with Traefik (GPU AMD)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik.yml --profile gpu-amd config
+
+      - name: Validate with Traefik and Tailscale (CPU)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml --profile cpu config
+
+      - name: Validate with Traefik and Tailscale (GPU NVIDIA)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml --profile gpu-nvidia config
+
+      - name: Validate with Traefik and Tailscale (GPU AMD)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml --profile gpu-amd config
+
+      - name: Validate with Traefik, Tailscale, and volume (CPU)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml -f docker-compose.add.volume.yml --profile cpu config
+
+      - name: Validate with Traefik, Tailscale, and volume (GPU NVIDIA)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml -f docker-compose.add.volume.yml --profile gpu-nvidia config
+
+      - name: Validate with Traefik, Tailscale, and volume (GPU AMD)
+        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
+        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml -f docker-compose.add.volume.yml --profile gpu-amd config
