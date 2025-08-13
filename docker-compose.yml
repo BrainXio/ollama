@@ -1,3 +1,4 @@
+---
 x-init-ollama: &init-ollama
   command:
     - -c
@@ -69,4 +70,3 @@ services:
     image: ollama/ollama:rocm
     profiles:
       - gpu-amd
-      
