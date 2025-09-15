@@ -8,7 +8,7 @@ on:
     branches: [main]
 
 jobs:
-  validate:
+  setup:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,13 +27,52 @@ jobs:
         run: |
           docker network create --driver bridge ollama-net || true
 
-      - name: Create dummy tsauthkey for validation
+      - name: Create dummy .env file
+        run: |
+          touch .env
+
+      - name: Create dummy tsauthkey
         run: |
           echo "dummy-key" > tsauthkey
 
-      - name: Create dummy .env file for validation
+      - name: Create override file for tailscale profile
         run: |
-          touch .env
+          echo "services:" > tailscale-override.yml
+          echo "  tailscale:" >> tailscale-override.yml
+          echo "    profiles: ['tailscale']" >> tailscale-override.yml
+          echo "  ollama-cpu-tailscale:" >> tailscale-override.yml
+          echo "    profiles: ['tailscale']" >> tailscale-override.yml
+
+      - name: Upload setup artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: setup-artifacts
+          path: |
+            .env
+            tsauthkey
+            tailscale-override.yml
+          retention-days: 7
+
+  validate-cpu:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download setup artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: setup-artifacts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo mv docker-compose /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
 
       - name: Validate and store CPU configuration
         run: |
@@ -51,6 +90,27 @@ jobs:
           path: cpu-config.yml
           retention-days: 7
 
+  validate-gpu-nvidia:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download setup artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: setup-artifacts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo mv docker-compose /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
       - name: Validate and store GPU NVIDIA configuration
         run: |
           docker-compose -f docker-compose.yml --profile gpu-nvidia config > gpu-nvidia-config.yml
@@ -66,6 +126,27 @@ jobs:
           name: gpu-nvidia-config
           path: gpu-nvidia-config.yml
           retention-days: 7
+
+  validate-gpu-amd:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download setup artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: setup-artifacts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo mv docker-compose /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
 
       - name: Validate and store GPU AMD configuration
         run: |
@@ -83,9 +164,30 @@ jobs:
           path: gpu-amd-config.yml
           retention-days: 7
 
+  validate-tailscale:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download setup artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: setup-artifacts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo mv docker-compose /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
       - name: Validate and store Tailscale configuration
         run: |
-          docker-compose -f docker-compose.yml --profile tailscale config > tailscale-config.yml
+          docker-compose -f docker-compose.yml -f tailscale-override.yml --profile tailscale config > tailscale-config.yml
         env:
           OLLAMA_PORT: 127.0.0.1:11434
           OLLAMA_VERSION: latest
@@ -100,6 +202,27 @@ jobs:
           name: tailscale-config
           path: tailscale-config.yml
           retention-days: 7
+
+  validate-tailscale-cpu:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download setup artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: setup-artifacts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo mv docker-compose /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
 
       - name: Validate and store Tailscale CPU configuration
         run: |
@@ -119,6 +242,27 @@ jobs:
           path: tailscale-cpu-config.yml
           retention-days: 7
 
+  validate-tailscale-gpu-nvidia:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download setup artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: setup-artifacts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo mv docker-compose /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
       - name: Validate and store Tailscale GPU NVIDIA configuration
         run: |
           docker-compose -f docker-compose.yml --profile tailscale-gpu-nvidia config > tailscale-gpu-nvidia-config.yml
@@ -136,6 +280,27 @@ jobs:
           name: tailscale-gpu-nvidia-config
           path: tailscale-gpu-nvidia-config.yml
           retention-days: 7
+
+  validate-tailscale-gpu-amd:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download setup artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: setup-artifacts
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        run: |
+          sudo mv docker-compose /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
 
       - name: Validate and store Tailscale GPU AMD configuration
         run: |
