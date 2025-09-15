@@ -8,101 +8,110 @@ on:
     branches: [main]
 
 jobs:
-  validate:
+  validate-cpu:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
+      - name: Validate CPU configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: cpu
+          output-file: cpu-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
 
-      - name: Create traefik-net network
-        run: |
-          docker network create --driver bridge traefik-net || true
+  validate-gpu-nvidia:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Validate base configuration (CPU)
-        if: hashFiles('docker-compose.yml') != ''
-        run: docker-compose -f docker-compose.yml --profile cpu config
+      - name: Validate GPU NVIDIA configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: gpu-nvidia
+          output-file: gpu-nvidia-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
 
-      - name: Validate base configuration (GPU NVIDIA)
-        if: hashFiles('docker-compose.yml') != ''
-        run: docker-compose -f docker-compose.yml --profile gpu-nvidia config
+  validate-gpu-amd:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Validate base configuration (GPU AMD)
-        if: hashFiles('docker-compose.yml') != ''
-        run: docker-compose -f docker-compose.yml --profile gpu-amd config
+      - name: Validate GPU AMD configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: gpu-amd
+          output-file: gpu-amd-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
 
-      - name: Validate with ports (CPU)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.ports.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.ports.yml --profile cpu config
+  validate-tailscale-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Validate with ports (GPU NVIDIA)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.ports.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.ports.yml --profile gpu-nvidia config
+      - name: Validate Tailscale CPU configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: tailscale-cpu
+          output-file: tailscale-cpu-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            TAILSCALE_VERSION=stable
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=false
 
-      - name: Validate with ports (GPU AMD)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.ports.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.ports.yml --profile gpu-amd config
+  validate-tailscale-gpu-nvidia:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Validate with volume (CPU)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.volume.yml --profile cpu config
+      - name: Validate Tailscale GPU NVIDIA configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: tailscale-gpu-nvidia
+          output-file: tailscale-gpu-nvidia-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            TAILSCALE_VERSION=stable
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=false
 
-      - name: Validate with volume (GPU NVIDIA)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.volume.yml --profile gpu-nvidia config
+  validate-tailscale-gpu-amd:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Validate with volume (GPU AMD)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.volume.yml --profile gpu-amd config
-
-      - name: Validate with Tailscale (CPU)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.tailscale.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.tailscale.yml --profile cpu config
-
-      - name: Validate with Tailscale (GPU NVIDIA)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.tailscale.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.tailscale.yml --profile gpu-nvidia config
-
-      - name: Validate with Tailscale (GPU AMD)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.tailscale.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.tailscale.yml --profile gpu-amd config
-
-      - name: Validate with Traefik (CPU)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik.yml --profile cpu config
-
-      - name: Validate with Traefik (GPU NVIDIA)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik.yml --profile gpu-nvidia config
-
-      - name: Validate with Traefik (GPU AMD)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik.yml --profile gpu-amd config
-
-      - name: Validate with Traefik and Tailscale (CPU)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml --profile cpu config
-
-      - name: Validate with Traefik and Tailscale (GPU NVIDIA)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml --profile gpu-nvidia config
-
-      - name: Validate with Traefik and Tailscale (GPU AMD)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml --profile gpu-amd config
-
-      - name: Validate with Traefik, Tailscale, and volume (CPU)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml -f docker-compose.add.volume.yml --profile cpu config
-
-      - name: Validate with Traefik, Tailscale, and volume (GPU NVIDIA)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml -f docker-compose.add.volume.yml --profile gpu-nvidia config
-
-      - name: Validate with Traefik, Tailscale, and volume (GPU AMD)
-        if: hashFiles('docker-compose.yml') != '' && hashFiles('docker-compose.add.traefik-tailscale.yml') != '' && hashFiles('docker-compose.add.volume.yml') != ''
-        run: docker-compose -f docker-compose.yml -f docker-compose.add.traefik-tailscale.yml -f docker-compose.add.volume.yml --profile gpu-amd config
+      - name: Validate Tailscale GPU AMD configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: tailscale-gpu-amd
+          output-file: tailscale-gpu-amd-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            TAILSCALE_VERSION=stable
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=false

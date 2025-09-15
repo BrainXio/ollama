@@ -1,0 +1,43 @@
+---
+name: 'Validate Docker Compose Configuration'
+description: 'Validates a Docker Compose configuration for a specified profile and stores the output as an artifact.'
+inputs:
+  profile:
+    description: 'The Docker Compose profile to validate'
+    required: true
+  output-file:
+    description: 'The file to store the configuration output'
+    required: true
+  env:
+    description: 'Environment variables to set during validation (multi-line format)'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Create .env file from inputs
+      shell: bash
+      run: |
+        echo "${{ inputs.env }}" > .env
+
+    - name: Create dummy tsauthkey if Tailscale profile
+      shell: bash
+      run: |
+        if [[ "${{ inputs.profile }}" == *"tailscale"* ]]; then
+          echo "dummy-key" > tsauthkey
+        fi
+
+    - name: Validate Docker Compose configuration
+      shell: bash
+      run: |
+        source .env
+        docker compose -f docker-compose.yml --profile ${{ inputs.profile }} config > ${{ inputs.output-file }}
+
+    - name: Upload configuration artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.output-file }}
+        path: ${{ inputs.output-file }}
+        retention-days: 7
