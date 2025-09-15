@@ -20,3 +20,6 @@ docker-compose.override.yml
 
 # tsauthkey
 tsauthkey
+
+# Ignore ollama-deploy.md
+ollama-deploy.md
