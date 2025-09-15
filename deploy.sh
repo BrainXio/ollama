@@ -12,6 +12,11 @@ detect_nvidia() {
         echo "NVIDIA GPU and Container Toolkit configured"
         return 0
       fi
+    elif [ -f "/etc/docker/daemon.json" ]; then
+      if grep -q '"nvidia"' "/etc/docker/daemon.json" && (grep -q '"path": *"nvidia-container-runtime"' "/etc/docker/daemon.json" || grep -q '"runtimeArgs": \[\]' "/etc/docker/daemon.json"); then
+        echo "NVIDIA GPU and Container Toolkit configured"
+        return 0
+      fi
     fi
     echo "NVIDIA GPU detected, but configuration in ~/.config/docker/daemon.json not found or incomplete"
     return 1
