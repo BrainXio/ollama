@@ -29,14 +29,6 @@ jobs:
         run: |
           echo "dummy-key" > tsauthkey
 
-      - name: Create override file for tailscale profile
-        run: |
-          echo "services:" > tailscale-override.yml
-          echo "  tailscale:" >> tailscale-override.yml
-          echo "    profiles: ['tailscale']" >> tailscale-override.yml
-          echo "  ollama-cpu-tailscale:" >> tailscale-override.yml
-          echo "    profiles: ['tailscale']" >> tailscale-override.yml
-
       - name: Upload setup artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -44,7 +36,6 @@ jobs:
           path: |
             .env
             tsauthkey
-            tailscale-override.yml
           retention-days: 7
 
   validate-cpu:
@@ -59,17 +50,23 @@ jobs:
         with:
           name: setup-artifacts
 
+      - name: Move .env to working directory
+        run: |
+          mv setup-artifacts/.env .
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate and store CPU configuration
-        run: |
-          docker compose -f docker-compose.yml --profile cpu config > cpu-config.yml
-        env:
-          OLLAMA_PORT: 127.0.0.1:11434
-          OLLAMA_VERSION: latest
-          OLLAMA_NETWORK_NAME: ollama-net
-          OLLAMA_NETWORK_EXTERNAL: false
+      - name: Validate CPU configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: cpu
+          output-file: cpu-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
 
       - name: Upload CPU configuration artifact
         uses: actions/upload-artifact@v4
@@ -90,17 +87,23 @@ jobs:
         with:
           name: setup-artifacts
 
+      - name: Move .env to working directory
+        run: |
+          mv setup-artifacts/.env .
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate and store GPU NVIDIA configuration
-        run: |
-          docker compose -f docker-compose.yml --profile gpu-nvidia config > gpu-nvidia-config.yml
-        env:
-          OLLAMA_PORT: 127.0.0.1:11434
-          OLLAMA_VERSION: latest
-          OLLAMA_NETWORK_NAME: ollama-net
-          OLLAMA_NETWORK_EXTERNAL: false
+      - name: Validate GPU NVIDIA configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: gpu-nvidia
+          output-file: gpu-nvidia-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
 
       - name: Upload GPU NVIDIA configuration artifact
         uses: actions/upload-artifact@v4
@@ -121,56 +124,29 @@ jobs:
         with:
           name: setup-artifacts
 
+      - name: Move .env to working directory
+        run: |
+          mv setup-artifacts/.env .
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate and store GPU AMD configuration
-        run: |
-          docker compose -f docker-compose.yml --profile gpu-amd config > gpu-amd-config.yml
-        env:
-          OLLAMA_PORT: 127.0.0.1:11434
-          OLLAMA_VERSION: latest
-          OLLAMA_NETWORK_NAME: ollama-net
-          OLLAMA_NETWORK_EXTERNAL: false
+      - name: Validate GPU AMD configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: gpu-amd
+          output-file: gpu-amd-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
 
       - name: Upload GPU AMD configuration artifact
         uses: actions/upload-artifact@v4
         with:
           name: gpu-amd-config
           path: gpu-amd-config.yml
-          retention-days: 7
-
-  validate-tailscale:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download setup artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: setup-artifacts
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Validate and store Tailscale configuration
-        run: |
-          docker compose -f docker-compose.yml -f tailscale-override.yml --profile tailscale config > tailscale-config.yml
-        env:
-          OLLAMA_PORT: 127.0.0.1:11434
-          OLLAMA_VERSION: latest
-          TAILSCALE_VERSION: stable
-          OLLAMA_NETWORK_NAME: ollama-net
-          OLLAMA_NETWORK_EXTERNAL: false
-          OLLAMA_ENABLE_TRAEFIK: false
-
-      - name: Upload Tailscale configuration artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tailscale-config
-          path: tailscale-config.yml
           retention-days: 7
 
   validate-tailscale-cpu:
@@ -185,19 +161,25 @@ jobs:
         with:
           name: setup-artifacts
 
+      - name: Move .env to working directory
+        run: |
+          mv setup-artifacts/.env .
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate and store Tailscale CPU configuration
-        run: |
-          docker compose -f docker-compose.yml --profile tailscale-cpu config > tailscale-cpu-config.yml
-        env:
-          OLLAMA_PORT: 127.0.0.1:11434
-          OLLAMA_VERSION: latest
-          TAILSCALE_VERSION: stable
-          OLLAMA_NETWORK_NAME: ollama-net
-          OLLAMA_NETWORK_EXTERNAL: false
-          OLLAMA_ENABLE_TRAEFIK: false
+      - name: Validate Tailscale CPU configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: tailscale-cpu
+          output-file: tailscale-cpu-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            TAILSCALE_VERSION=stable
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=false
 
       - name: Upload Tailscale CPU configuration artifact
         uses: actions/upload-artifact@v4
@@ -218,19 +200,25 @@ jobs:
         with:
           name: setup-artifacts
 
+      - name: Move .env to working directory
+        run: |
+          mv setup-artifacts/.env .
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate and store Tailscale GPU NVIDIA configuration
-        run: |
-          docker compose -f docker-compose.yml --profile tailscale-gpu-nvidia config > tailscale-gpu-nvidia-config.yml
-        env:
-          OLLAMA_PORT: 127.0.0.1:11434
-          OLLAMA_VERSION: latest
-          TAILSCALE_VERSION: stable
-          OLLAMA_NETWORK_NAME: ollama-net
-          OLLAMA_NETWORK_EXTERNAL: false
-          OLLAMA_ENABLE_TRAEFIK: false
+      - name: Validate Tailscale GPU NVIDIA configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: tailscale-gpu-nvidia
+          output-file: tailscale-gpu-nvidia-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            TAILSCALE_VERSION=stable
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=false
 
       - name: Upload Tailscale GPU NVIDIA configuration artifact
         uses: actions/upload-artifact@v4
@@ -251,19 +239,25 @@ jobs:
         with:
           name: setup-artifacts
 
+      - name: Move .env to working directory
+        run: |
+          mv setup-artifacts/.env .
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Validate and store Tailscale GPU AMD configuration
-        run: |
-          docker compose -f docker-compose.yml --profile tailscale-gpu-amd config > tailscale-gpu-amd-config.yml
-        env:
-          OLLAMA_PORT: 127.0.0.1:11434
-          OLLAMA_VERSION: latest
-          TAILSCALE_VERSION: stable
-          OLLAMA_NETWORK_NAME: ollama-net
-          OLLAMA_NETWORK_EXTERNAL: false
-          OLLAMA_ENABLE_TRAEFIK: false
+      - name: Validate Tailscale GPU AMD configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: tailscale-gpu-amd
+          output-file: tailscale-gpu-amd-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            TAILSCALE_VERSION=stable
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=false
 
       - name: Upload Tailscale GPU AMD configuration artifact
         uses: actions/upload-artifact@v4

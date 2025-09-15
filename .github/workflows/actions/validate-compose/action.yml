@@ -1,0 +1,28 @@
+name: 'Validate Docker Compose Configuration'
+description: 'Validates a Docker Compose configuration for a specified profile and stores the output as an artifact.'
+inputs:
+  profile:
+    description: 'The Docker Compose profile to validate'
+    required: true
+  output-file:
+    description: 'The file to store the configuration output'
+    required: true
+  env:
+    description: 'Environment variables to set during validation'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate Docker Compose configuration
+      shell: bash
+      run: |
+        echo "${{ inputs.env }}" > env_vars
+        source env_vars
+        docker compose -f docker-compose.yml --profile ${{ inputs.profile }} config > ${{ inputs.output-file }}
+      env:
+        OLLAMA_PORT: ${{ fromJson(inputs.env).OLLAMA_PORT }}
+        OLLAMA_VERSION: ${{ fromJson(inputs.env).OLLAMA_VERSION }}
+        TAILSCALE_VERSION: ${{ fromJson(inputs.env).TAILSCALE_VERSION }}
+        OLLAMA_NETWORK_NAME: ${{ fromJson(inputs.env).OLLAMA_NETWORK_NAME }}
+        OLLAMA_NETWORK_EXTERNAL: ${{ fromJson(inputs.env).OLLAMA_NETWORK_EXTERNAL }}
+        OLLAMA_ENABLE_TRAEFIK: ${{ fromJson(inputs.env).OLLAMA_ENABLE_TRAEFIK }}
