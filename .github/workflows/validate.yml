@@ -17,12 +17,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: Create ollama-network
         run: |
           docker network create --driver bridge ollama-net || true
@@ -68,15 +62,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo mv docker-compose /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: Validate and store CPU configuration
         run: |
-          docker-compose -f docker-compose.yml --profile cpu config > cpu-config.yml
+          docker compose -f docker-compose.yml --profile cpu config > cpu-config.yml
         env:
           OLLAMA_PORT: 127.0.0.1:11434
           OLLAMA_VERSION: latest
@@ -105,15 +93,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo mv docker-compose /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: Validate and store GPU NVIDIA configuration
         run: |
-          docker-compose -f docker-compose.yml --profile gpu-nvidia config > gpu-nvidia-config.yml
+          docker compose -f docker-compose.yml --profile gpu-nvidia config > gpu-nvidia-config.yml
         env:
           OLLAMA_PORT: 127.0.0.1:11434
           OLLAMA_VERSION: latest
@@ -142,15 +124,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo mv docker-compose /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: Validate and store GPU AMD configuration
         run: |
-          docker-compose -f docker-compose.yml --profile gpu-amd config > gpu-amd-config.yml
+          docker compose -f docker-compose.yml --profile gpu-amd config > gpu-amd-config.yml
         env:
           OLLAMA_PORT: 127.0.0.1:11434
           OLLAMA_VERSION: latest
@@ -179,15 +155,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo mv docker-compose /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: Validate and store Tailscale configuration
         run: |
-          docker-compose -f docker-compose.yml -f tailscale-override.yml --profile tailscale config > tailscale-config.yml
+          docker compose -f docker-compose.yml -f tailscale-override.yml --profile tailscale config > tailscale-config.yml
         env:
           OLLAMA_PORT: 127.0.0.1:11434
           OLLAMA_VERSION: latest
@@ -218,15 +188,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo mv docker-compose /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: Validate and store Tailscale CPU configuration
         run: |
-          docker-compose -f docker-compose.yml --profile tailscale-cpu config > tailscale-cpu-config.yml
+          docker compose -f docker-compose.yml --profile tailscale-cpu config > tailscale-cpu-config.yml
         env:
           OLLAMA_PORT: 127.0.0.1:11434
           OLLAMA_VERSION: latest
@@ -257,15 +221,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo mv docker-compose /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: Validate and store Tailscale GPU NVIDIA configuration
         run: |
-          docker-compose -f docker-compose.yml --profile tailscale-gpu-nvidia config > tailscale-gpu-nvidia-config.yml
+          docker compose -f docker-compose.yml --profile tailscale-gpu-nvidia config > tailscale-gpu-nvidia-config.yml
         env:
           OLLAMA_PORT: 127.0.0.1:11434
           OLLAMA_VERSION: latest
@@ -296,15 +254,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo mv docker-compose /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-
       - name: Validate and store Tailscale GPU AMD configuration
         run: |
-          docker-compose -f docker-compose.yml --profile tailscale-gpu-amd config > tailscale-gpu-amd-config.yml
+          docker compose -f docker-compose.yml --profile tailscale-gpu-amd config > tailscale-gpu-amd-config.yml
         env:
           OLLAMA_PORT: 127.0.0.1:11434
           OLLAMA_VERSION: latest
