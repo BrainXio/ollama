@@ -1,3 +1,4 @@
+---
 name: 'Validate Docker Compose Configuration'
 description: 'Validates a Docker Compose configuration for a specified profile and stores the output as an artifact.'
 inputs:
@@ -8,21 +9,35 @@ inputs:
     description: 'The file to store the configuration output'
     required: true
   env:
-    description: 'Environment variables to set during validation'
+    description: 'Environment variables to set during validation (multi-line format)'
     required: true
 runs:
   using: 'composite'
   steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Create .env file from inputs
+      shell: bash
+      run: |
+        echo "${{ inputs.env }}" > .env
+
+    - name: Create dummy tsauthkey if Tailscale profile
+      shell: bash
+      run: |
+        if [[ "${{ inputs.profile }}" == *"tailscale"* ]]; then
+          echo "dummy-key" > tsauthkey
+        fi
+
     - name: Validate Docker Compose configuration
       shell: bash
       run: |
-        echo "${{ inputs.env }}" > env_vars
-        source env_vars
+        source .env
         docker compose -f docker-compose.yml --profile ${{ inputs.profile }} config > ${{ inputs.output-file }}
-      env:
-        OLLAMA_PORT: ${{ fromJson(inputs.env).OLLAMA_PORT }}
-        OLLAMA_VERSION: ${{ fromJson(inputs.env).OLLAMA_VERSION }}
-        TAILSCALE_VERSION: ${{ fromJson(inputs.env).TAILSCALE_VERSION }}
-        OLLAMA_NETWORK_NAME: ${{ fromJson(inputs.env).OLLAMA_NETWORK_NAME }}
-        OLLAMA_NETWORK_EXTERNAL: ${{ fromJson(inputs.env).OLLAMA_NETWORK_EXTERNAL }}
-        OLLAMA_ENABLE_TRAEFIK: ${{ fromJson(inputs.env).OLLAMA_ENABLE_TRAEFIK }}
+
+    - name: Upload configuration artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.output-file | basename }}
+        path: ${{ inputs.output-file }}
+        retention-days: 7
