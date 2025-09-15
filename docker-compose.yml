@@ -85,10 +85,9 @@ services:
     networks:
       - ollama-network
 
-# ==============================================================================
-# Ollama Initialization Services (Pull Models for CPU, GPU-NVIDIA, GPU-AMD)
-# ==============================================================================
-  # Initialization service for CPU, pulls models after ollama-cpu starts
+  # ==============================================================================
+  # Ollama Initialization Services (Pull Models for CPU, GPU-NVIDIA, GPU-AMD)
+  # ==============================================================================
   ollama-init-pull-cpu:
     <<: *init-ollama
     depends_on:
@@ -96,7 +95,6 @@ services:
     profiles:
       - cpu
 
-  # Initialization service for NVIDIA GPU, pulls models after ollama-gpu starts
   ollama-init-pull-gpu:
     <<: *init-ollama
     depends_on:
@@ -105,7 +103,6 @@ services:
     profiles:
       - gpu-nvidia
 
-  # Initialization service for AMD GPU, pulls models after ollama-gpu-amd starts
   ollama-init-pull-gpu-amd:
     <<: *init-ollama
     depends_on:
@@ -114,10 +111,9 @@ services:
     profiles:
       - gpu-amd
 
-# ==============================================================================
-# Tailscale-Enabled Ollama Services
-# ==============================================================================
-  # Ollama service for CPU with Tailscale, using network_mode: service:tailscale
+  # ==============================================================================
+  # Tailscale-Enabled Ollama Services
+  # ==============================================================================
   ollama-cpu-tailscale:
     <<: *service-ollama
     depends_on:
@@ -127,7 +123,6 @@ services:
       - tailscale-cpu
       - tailscale
 
-  # Ollama service for NVIDIA GPU with Tailscale, using network_mode: service:tailscale
   ollama-gpu-tailscale:
     <<: *service-ollama
     depends_on:
@@ -146,7 +141,6 @@ services:
       - tailscale
     image: ollama/ollama:${OLLAMA_VERSION:-latest}
 
-  # Ollama service for AMD GPU with Tailscale, using network_mode: service:tailscale
   ollama-gpu-amd-tailscale:
     <<: *service-ollama
     depends_on:
@@ -160,7 +154,6 @@ services:
       - tailscale-gpu-amd
       - tailscale
 
-  # Tailscale service for secure networking, with Traefik labels for HTTPS routing
   tailscale:
     cap_add:
       - NET_ADMIN
