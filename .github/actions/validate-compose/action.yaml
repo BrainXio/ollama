@@ -38,6 +38,6 @@ runs:
     - name: Upload configuration artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.output-file | basename }}
+        name: ${{ inputs.output-file }}
         path: ${{ inputs.output-file }}
         retention-days: 7
