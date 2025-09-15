@@ -1,34 +1,59 @@
 ---
+name: ollama
+
+# Base configuration for Ollama initialization, pulling specified models
 x-init-ollama: &init-ollama
   command:
     - -c
     - |
       sleep 3;
-      OLLAMA_HOST=${CONTAINER_NAME:-ollama}${NAME_SUFFIX:-}:11434;
       ollama pull $${OLLAMA_BASE_MODEL:-smollm2};
-      ollama pull $${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text};
-  container_name: ollama-init${NAME_SUFFIX:-}
+      ollama pull $${OLLAMA_EMBEDDING_MODEL:-smollm2};
+      ollama pull $${OLLAMA_THINKING_MODEL:-smollm2};
+      ollama pull $${OLLAMA_TOOLS_MODEL:-smollm2};
+      ollama pull $${OLLAMA_VISION_MODEL:-smollm2};
+  container_name: ollama-init
   entrypoint: /bin/sh
-  image: ollama/ollama:latest
+  environment:
+    - OLLAMA_HOST=ollama:11434
+  env_file:
+    - .env
+  image: ollama/ollama:${OLLAMA_VERSION:-latest}
   volumes:
-    - ./ollama_data:/root/.ollama
+    - ${OLLAMA_VOLUME:-ollama-data}:/root/.ollama
 
+# Base configuration for Ollama service, defining common settings
 x-ollama: &service-ollama
-  container_name: ${CONTAINER_NAME:-ollama}${NAME_SUFFIX:-}
+  container_name: ollama
   environment:
     - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
     - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
     - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
-  image: ollama/ollama:latest
+  image: ollama/ollama:${OLLAMA_VERSION:-latest}
   restart: unless-stopped
   volumes:
-    - ./ollama_data:/root/.ollama
+    - ${OLLAMA_VOLUME:-ollama-data}:/root/.ollama
 
+# Secret for Tailscale authentication key
+secrets:
+  tsauthkey:
+    file: ${TSAUTHKEY_PATH:-tsauthkey}
+
+# ==============================================================================
+# Base Ollama Services (CPU, GPU-NVIDIA, GPU-AMD)
+# ==============================================================================
 services:
+  # Ollama service for CPU, exposing port 11434 and using ollama-network
   ollama-cpu:
     <<: *service-ollama
     profiles:
       - cpu
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
+    networks:
+      - ollama-network
+
+  # Ollama service for NVIDIA GPU, with GPU reservation and network configuration
   ollama-gpu:
     <<: *service-ollama
     deploy:
@@ -39,9 +64,14 @@ services:
                 - gpu
               count: 1
               driver: nvidia
-    image: ollama/ollama:latest
     profiles:
       - gpu-nvidia
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
+    networks:
+      - ollama-network
+
+  # Ollama service for AMD GPU, using ROCm image and device mappings
   ollama-gpu-amd:
     <<: *service-ollama
     devices:
@@ -50,19 +80,32 @@ services:
     image: ollama/ollama:rocm
     profiles:
       - gpu-amd
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
+    networks:
+      - ollama-network
+
+# ==============================================================================
+# Ollama Initialization Services (Pull Models for CPU, GPU-NVIDIA, GPU-AMD)
+# ==============================================================================
+  # Initialization service for CPU, pulls models after ollama-cpu starts
   ollama-init-pull-cpu:
     <<: *init-ollama
     depends_on:
       - ollama-cpu
     profiles:
       - cpu
+
+  # Initialization service for NVIDIA GPU, pulls models after ollama-gpu starts
   ollama-init-pull-gpu:
     <<: *init-ollama
     depends_on:
       - ollama-gpu
-    image: ollama/ollama:latest
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
     profiles:
       - gpu-nvidia
+
+  # Initialization service for AMD GPU, pulls models after ollama-gpu-amd starts
   ollama-init-pull-gpu-amd:
     <<: *init-ollama
     depends_on:
@@ -70,3 +113,108 @@ services:
     image: ollama/ollama:rocm
     profiles:
       - gpu-amd
+
+# ==============================================================================
+# Tailscale-Enabled Ollama Services
+# ==============================================================================
+  # Ollama service for CPU with Tailscale, using network_mode: service:tailscale
+  ollama-cpu-tailscale:
+    <<: *service-ollama
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+    profiles:
+      - tailscale-cpu
+      - tailscale
+
+  # Ollama service for NVIDIA GPU with Tailscale, using network_mode: service:tailscale
+  ollama-gpu-tailscale:
+    <<: *service-ollama
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities:
+                - gpu
+              count: 1
+              driver: nvidia
+    profiles:
+      - tailscale-gpu-nvidia
+      - tailscale
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+
+  # Ollama service for AMD GPU with Tailscale, using network_mode: service:tailscale
+  ollama-gpu-amd-tailscale:
+    <<: *service-ollama
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    image: ollama/ollama:rocm
+    profiles:
+      - tailscale-gpu-amd
+      - tailscale
+
+  # Tailscale service for secure networking, with Traefik labels for HTTPS routing
+  tailscale:
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    container_name: ollama-ts
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tsauthkey
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    hostname: ollama${OLLAMA_NAME_SUFFIX:-}
+    image: tailscale/tailscale:${TAILSCALE_VERSION:-stable}
+    restart: unless-stopped
+    secrets:
+      - tsauthkey
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+    profiles:
+      - tailscale
+      - tailscale-cpu
+      - tailscale-gpu-nvidia
+      - tailscale-gpu-amd
+    labels:
+      - traefik.enable=${OLLAMA_ENABLE_TRAEFIK:-false}
+      - traefik.docker.network=ollama-network
+      - traefik.http.middlewares.ip-whitelist.ipallowlist.sourcerange=${IP_WHITELIST:-0.0.0.0/0}
+      - traefik.http.middlewares.ollama-network-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.ollama.entrypoints=web
+      - traefik.http.routers.ollama.middlewares=ollama-network-redirect
+      - traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN:-}`)
+      - traefik.http.routers.ollama-secure.entrypoints=websecure
+      - traefik.http.routers.ollama-secure.rule=Host(`ollama.${DOMAIN:-}`)
+      - traefik.http.routers.ollama-secure.service=ollama
+      - traefik.http.routers.ollama-secure.tls=true
+      - traefik.http.services.ollama.loadbalancer.server.port=11434
+    networks:
+      - ollama-network
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
+
+# ==============================================================================
+# Volumes and Networks
+# ==============================================================================
+volumes:
+  # Persistent volume for Ollama data, defaults to ollama-data if OLLAMA_VOLUME not set
+  ollama-data:
+    name: ollama-data
+  # Persistent volume for Tailscale state
+  tailscale-state:
+    name: tailscale-state
+
+networks:
+  # Network for Ollama and Traefik integration, configurable via OLLAMA_NETWORK_NAME
+  ollama-network:
+    name: ${OLLAMA_NETWORK_NAME:-ollama-net}
+    external: ${OLLAMA_NETWORK_EXTERNAL:-false}
