@@ -197,6 +197,9 @@ if [[ "$PROFILE" == *"tailscale"* ]]; then
   echo "TSAUTHKEY_PATH: $TSAUTHKEY_PATH"
 fi
 
-# For testing, do not execute docker compose yet
-# To deploy, uncomment and add: docker compose --profile "$PROFILE" up -d
+# Export OLLAMA_NAME_SUFFIX for Docker Compose to use
+export OLLAMA_NAME_SUFFIX
+
+# Deploy with Docker Compose, applying OLLAMA_NAME_SUFFIX
+# Ensure docker-compose.yml uses OLLAMA_NAME_SUFFIX (e.g., as an environment variable or in service naming)
 docker compose --profile "$PROFILE" up -d --force-recreate
