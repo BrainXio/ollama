@@ -161,11 +161,12 @@ fi
 
 # Detect GPU and VRAM if profile contains 'gpu'
 if [[ "$PROFILE" == *"gpu"* ]]; then
-  # Use nvidia-smi to get VRAM size in GB (total global memory)
-  VRAM_GB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1)
-  if [ -n "$VRAM_GB" ]; then
-    VRAM_GB=$((VRAM_GB / 1024)) # Convert MB to GB if needed
+  VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1)
+  if [ -n "$VRAM_MB" ]; then
+    # Convert MB to GB with ceiling to avoid truncation
+    VRAM_GB=$(( (VRAM_MB + 1023) / 1024 )) # Ceiling division: adds 1023 to round up
     OLLAMA_NAME_SUFFIX="-gpu${VRAM_GB}"
+    echo "Raw GPU VRAM detected: ${VRAM_MB} MB" # Debug output
   else
     echo "Warning: NVIDIA GPU not detected or nvidia-smi not available, using default suffix"
     OLLAMA_NAME_SUFFIX="-gpu0"
@@ -196,6 +197,9 @@ if [[ "$PROFILE" == *"tailscale"* ]]; then
   echo "TSAUTHKEY_PATH: $TSAUTHKEY_PATH"
 fi
 
-# For testing, do not execute docker compose yet
-# To deploy, uncomment and add: docker compose --profile "$PROFILE" up -d
+# Export OLLAMA_NAME_SUFFIX for Docker Compose to use
+export OLLAMA_NAME_SUFFIX
+
+# Deploy with Docker Compose, applying OLLAMA_NAME_SUFFIX
+# Ensure docker-compose.yml uses OLLAMA_NAME_SUFFIX (e.g., as an environment variable or in service naming)
 docker compose --profile "$PROFILE" up -d --force-recreate
