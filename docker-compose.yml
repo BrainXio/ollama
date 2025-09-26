@@ -7,21 +7,32 @@ x-init-ollama: &init-ollama
     - -c
     - |
       sleep 3;
-      # ollama pull ${OLLAMA_BASE_MODEL:-smollm2};
-      ollama pull ${OLLAMA_READ_LM:-read-lm:latest};
-      # ollama pull $${OLLAMA_EMBEDDING_MODEL:-smollm2};
-      # ollama pull $${OLLAMA_THINKING_MODEL:-smollm2};
-      # ollama pull $${OLLAMA_TOOLS_MODEL:-smollm2};
-      # ollama pull $${OLLAMA_VISION_MODEL:-smollm2};
+      echo "ollama pull $${OLLAMA_BASE_MODEL:-smollm2}";
+      ollama pull $${OLLAMA_BASE_MODEL:-smollm2};
+      echo "ollama pull $${OLLAMA_EMBED_MODEL:-nomic-embed-text}";
+      ollama pull $${OLLAMA_EMBED_MODEL:-nomic-embed-text};
+      echo "ollama pull $${OLLAMA_GUARD_MODEL:-granite3-guardian:2b}";
+      ollama pull $${OLLAMA_GUARD_MODEL:-granite3-guardian:2b};
+      echo "ollama pull $${OLLAMA_HTML_MODEL:-reader-lm:1.5b}";
+      ollama pull $${OLLAMA_HTML_MODEL:-reader-lm:1.5b};
+      echo "ollama pull $${OLLAMA_THINKING_MODEL:-deepseek-r1:1.5b}";
+      ollama pull $${OLLAMA_THINKING_MODEL:-deepseek-r1:1.5b};
+      echo "ollama pull $${OLLAMA_TOOLS_MODEL:-granite3.1-moe:1b}";
+      ollama pull $${OLLAMA_TOOLS_MODEL:-granite3.1-moe:1b};
+      echo "ollama pull $${OLLAMA_VISION_MODEL:-granite3.2-vision:2b}";
+      ollama pull $${OLLAMA_VISION_MODEL:-granite3.2-vision:2b};
+
   container_name: ollama-init
   entrypoint: /bin/sh
   environment:
-    - OLLAMA_HOST=ollama:11434
+    - OLLAMA_HOST=${TAILSCALE_HOSTNAME:-ollama}:11434
   env_file:
     - .env
   image: ollama/ollama:${OLLAMA_VERSION:-latest}
   volumes:
     - ${OLLAMA_VOLUME:-ollama-data}:/root/.ollama
+  networks:
+    - ollama-network
 
 # Base configuration for Ollama service, defining common settings
 x-ollama: &service-ollama
@@ -29,8 +40,9 @@ x-ollama: &service-ollama
   environment:
     - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
     - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
-    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-4}
     - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-30m}
+    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-4}
+    - OLLAMA_NUM_CTX=${OLLAMA_NUM_CTX:-8192}
   image: ollama/ollama:${OLLAMA_VERSION:-latest}
   restart: unless-stopped
   volumes:
@@ -97,7 +109,7 @@ services:
     profiles:
       - cpu
 
-  ollama-init-pull-gpu:
+  ollama-init-pull-nvidia-gpu:
     <<: *init-ollama
     depends_on:
       - ollama-gpu
@@ -116,6 +128,28 @@ services:
   # ==============================================================================
   # Tailscale-Enabled Ollama Services
   # ==============================================================================
+  ollama-init-pull-cpu-tailscale:
+    <<: *init-ollama
+    depends_on:
+      - ollama-cpu-tailscale
+    profiles:
+      - tailscale-cpu
+
+  ollama-init-pull-nvidia-gpu-tailscale:
+    <<: *init-ollama
+    depends_on:
+      - ollama-nvidia-gpu-tailscale
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    profiles:
+      - tailscale-nvidia-gpu
+  ollama-init-pull-amd-gpu-tailscale:
+    <<: *init-ollama
+    depends_on:
+      - ollama-amd-gpu-tailscale
+    image: ollama/ollama:rocm
+    profiles:
+      - tailscale-amd-gpu
+
   ollama-cpu-tailscale:
     <<: *service-ollama
     depends_on:
@@ -123,9 +157,8 @@ services:
     network_mode: service:tailscale
     profiles:
       - tailscale-cpu
-      - tailscale
 
-  ollama-gpu-tailscale:
+  ollama-nvidia-gpu-tailscale:
     <<: *service-ollama
     depends_on:
       - tailscale
@@ -140,7 +173,6 @@ services:
               driver: nvidia
     profiles:
       - tailscale-nvidia-gpu
-      - tailscale
     image: ollama/ollama:${OLLAMA_VERSION:-latest}
 
   ollama-amd-gpu-tailscale:
@@ -154,7 +186,6 @@ services:
     image: ollama/ollama:rocm
     profiles:
       - tailscale-amd-gpu
-      - tailscale
 
   tailscale:
     cap_add:
