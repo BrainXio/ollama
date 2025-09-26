@@ -30,7 +30,7 @@ Follow these steps to deploy Ollama:
      - `OLLAMA_PORT=127.0.0.1:11434`: Binds Ollama to localhost on port 11434 (default).
      - `OLLAMA_VOLUME=ollama-data`: Uses a Docker volume for model storage (default). Set to `./ollama_data` for a local directory.
      - `TSAUTHKEY_PATH=tsauthkey`: Path to the Tailscale authentication key file.
-     - `OLLAMA_NAME_SUFFIX=`: Optional suffix for Tailscale hostname (e.g., `-small` for `ollama-small`).
+     - `TAILSCALE_HOSTNAME=`: Optional Tailscale hostname (e.g., `ollama-small`).
      - `OLLAMA_VERSION=latest`: Ollama image version (default).
      - `TAILSCALE_VERSION=stable`: Tailscale image version (default).
      - `OLLAMA_NETWORK_NAME=ollama-net`: Docker network name (default).
@@ -81,7 +81,7 @@ Follow these steps to deploy Ollama:
 
 4. **Access Ollama**:
    - Local: `http://localhost:11434/api/tags` (uses `OLLAMA_PORT=127.0.0.1:11434`).
-   - Tailscale: `http://ollama.yourtailnet.ts.net:11434/api/tags` (or `ollama-small.yourtailnet.ts.net:11434` if `OLLAMA_NAME_SUFFIX=-small`).
+   - Tailscale: `http://ollama.yourtailnet.ts.net:11434/api/tags` (or `ollama-small.yourtailnet.ts.net:11434` if `TAILSCALE_HOSTNAME=-small`).
    - Traefik: `https://ollama.yourdomain.com/api/tags` (requires `OLLAMA_ENABLE_TRAEFIK=true` and `DOMAIN` set).
 
 ### Security Considerations
