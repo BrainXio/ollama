@@ -67,21 +67,21 @@ services:
               count: 1
               driver: nvidia
     profiles:
-      - gpu-nvidia
+      - nvidia-gpu
     ports:
       - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
     networks:
       - ollama-network
 
   # Ollama service for AMD GPU, using ROCm image and device mappings
-  ollama-gpu-amd:
+  ollama-amd-gpu:
     <<: *service-ollama
     devices:
       - /dev/kfd
       - /dev/dri
     image: ollama/ollama:rocm
     profiles:
-      - gpu-amd
+      - amd-gpu
     ports:
       - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
     networks:
@@ -103,15 +103,15 @@ services:
       - ollama-gpu
     image: ollama/ollama:${OLLAMA_VERSION:-latest}
     profiles:
-      - gpu-nvidia
+      - nvidia-gpu
 
-  ollama-init-pull-gpu-amd:
+  ollama-init-pull-amd-gpu:
     <<: *init-ollama
     depends_on:
-      - ollama-gpu-amd
+      - ollama-amd-gpu
     image: ollama/ollama:rocm
     profiles:
-      - gpu-amd
+      - amd-gpu
 
   # ==============================================================================
   # Tailscale-Enabled Ollama Services
@@ -139,11 +139,11 @@ services:
               count: 1
               driver: nvidia
     profiles:
-      - tailscale-gpu-nvidia
+      - tailscale-nvidia-gpu
       - tailscale
     image: ollama/ollama:${OLLAMA_VERSION:-latest}
 
-  ollama-gpu-amd-tailscale:
+  ollama-amd-gpu-tailscale:
     <<: *service-ollama
     depends_on:
       - tailscale
@@ -153,7 +153,7 @@ services:
       - /dev/dri
     image: ollama/ollama:rocm
     profiles:
-      - tailscale-gpu-amd
+      - tailscale-amd-gpu
       - tailscale
 
   tailscale:
@@ -177,8 +177,8 @@ services:
     profiles:
       - tailscale
       - tailscale-cpu
-      - tailscale-gpu-nvidia
-      - tailscale-gpu-amd
+      - tailscale-nvidia-gpu
+      - tailscale-amd-gpu
     labels:
       - traefik.enable=${OLLAMA_ENABLE_TRAEFIK:-false}
       - traefik.docker.network=ollama-network
