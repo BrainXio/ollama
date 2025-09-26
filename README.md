@@ -6,9 +6,9 @@ This repository provides a Docker Compose configuration for deploying Ollama, an
 ### Services
 - **ollama-cpu**: Runs Ollama on CPU, binding to `127.0.0.1:11434` for local access.
 - **ollama-gpu**: Runs Ollama on NVIDIA GPU, using GPU acceleration for faster model processing.
-- **ollama-gpu-amd**: Runs Ollama on AMD GPU with ROCm support for GPU-accelerated models.
-- **ollama-init-pull-cpu/gpu/gpu-amd**: Pulls specified models (e.g., `smollm2`) after the corresponding Ollama service starts, ensuring models are ready for use.
-- **ollama-cpu-tailscale/gpu-tailscale/gpu-amd-tailscale**: Runs Ollama with Tailscale networking for secure remote access, using `network_mode: service:tailscale` to route traffic through the Tailscale service.
+- **ollama-amd-gpu**: Runs Ollama on AMD GPU with ROCm support for GPU-accelerated models.
+- **ollama-init-pull-cpu/gpu/amd-gpu**: Pulls specified models (e.g., `smollm2`) after the corresponding Ollama service starts, ensuring models are ready for use.
+- **ollama-cpu-tailscale/gpu-tailscale/amd-gpu-tailscale**: Runs Ollama with Tailscale networking for secure remote access, using `network_mode: service:tailscale` to route traffic through the Tailscale service.
 - **tailscale**: Provides secure, encrypted networking for remote access, with optional Traefik integration for HTTPS routing.
 
 ## Quick Start
@@ -64,16 +64,16 @@ Follow these steps to deploy Ollama:
    - NVIDIA GPU with local volume:
      ```bash
      echo "OLLAMA_VOLUME=./ollama_data" >> .env
-     docker compose --profile gpu-nvidia up -d
+     docker compose --profile nvidia-gpu up -d
      ```
      Starts `ollama-gpu` and `ollama-init-pull-gpu`, using `./ollama_data`.
    - AMD GPU with Tailscale and Traefik:
      ```bash
      echo "OLLAMA_ENABLE_TRAEFIK=true" >> .env
      echo "DOMAIN=yourdomain.com" >> .env
-     docker compose --profile tailscale-gpu-amd up -d
+     docker compose --profile tailscale-amd-gpu up -d
      ```
-     Starts `ollama-gpu-amd-tailscale`, `ollama-init-pull-gpu-amd`, and `tailscale` with Traefik routing.
+     Starts `ollama-amd-gpu-tailscale`, `ollama-init-pull-amd-gpu`, and `tailscale` with Traefik routing.
    - Check running services:
      ```bash
      docker compose ps
@@ -108,7 +108,7 @@ Security is critical when deploying Ollama to protect your server and data:
 ```
 
 ## Features
-- **Modular Profiles**: Select configurations using profiles (`cpu`, `gpu-nvidia`, `gpu-amd`, `tailscale-cpu`, `tailscale-gpu-nvidia`, `tailscale-gpu-amd`).
+- **Modular Profiles**: Select configurations using profiles (`cpu`, `nvidia-gpu`, `amd-gpu`, `tailscale-cpu`, `tailscale-nvidia-gpu`, `tailscale-amd-gpu`).
 - **Flexible Storage**: Store models in a Docker volume (`ollama-data`) or local directory (`./ollama_data`) via `OLLAMA_VOLUME`.
 - **GPU Support**: Profiles for CPU, NVIDIA GPU, and AMD GPU (ROCm).
 - **Secure Networking**: Local access via `127.0.0.1`, Tailscale for encrypted remote access, or Traefik for HTTPS routing with IP whitelisting.
