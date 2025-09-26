@@ -150,7 +150,6 @@ services:
     profiles:
       - tailscale-amd-gpu
 
-
   ollama-cpu-tailscale:
     <<: *service-ollama
     depends_on:
