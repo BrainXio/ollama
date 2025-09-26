@@ -7,11 +7,12 @@ x-init-ollama: &init-ollama
     - -c
     - |
       sleep 3;
-      ollama pull $${OLLAMA_BASE_MODEL:-smollm2};
-      ollama pull $${OLLAMA_EMBEDDING_MODEL:-smollm2};
-      ollama pull $${OLLAMA_THINKING_MODEL:-smollm2};
-      ollama pull $${OLLAMA_TOOLS_MODEL:-smollm2};
-      ollama pull $${OLLAMA_VISION_MODEL:-smollm2};
+      # ollama pull ${OLLAMA_BASE_MODEL:-smollm2};
+      ollama pull ${OLLAMA_READ_LM:-read-lm:latest};
+      # ollama pull $${OLLAMA_EMBEDDING_MODEL:-smollm2};
+      # ollama pull $${OLLAMA_THINKING_MODEL:-smollm2};
+      # ollama pull $${OLLAMA_TOOLS_MODEL:-smollm2};
+      # ollama pull $${OLLAMA_VISION_MODEL:-smollm2};
   container_name: ollama-init
   entrypoint: /bin/sh
   environment:
@@ -28,7 +29,8 @@ x-ollama: &service-ollama
   environment:
     - OLLAMA_FLASH_ATTENTION=${OLLAMA_FLASH_ATTENTION:-1}
     - OLLAMA_KV_CACHE_TYPE=${OLLAMA_KV_CACHE_TYPE:-q8_0}
-    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-2}
+    - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-4}
+    - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-30m}
   image: ollama/ollama:${OLLAMA_VERSION:-latest}
   restart: unless-stopped
   volumes:
@@ -165,7 +167,7 @@ services:
       - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tsauthkey
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
-    hostname: ollama${OLLAMA_NAME_SUFFIX:-}
+    hostname: ${TAILSCALE_HOSTNAME:-ollama}
     image: tailscale/tailscale:${TAILSCALE_VERSION:-stable}
     restart: unless-stopped
     secrets:
@@ -201,10 +203,8 @@ services:
 volumes:
   # Persistent volume for Ollama data, defaults to ollama-data if OLLAMA_VOLUME not set
   ollama-data:
-    name: ollama-data
   # Persistent volume for Tailscale state
   tailscale-state:
-    name: tailscale-state
 
 networks:
   # Network for Ollama and Traefik integration, configurable via OLLAMA_NETWORK_NAME
