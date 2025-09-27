@@ -21,7 +21,6 @@ x-init-ollama: &init-ollama
       ollama pull $${OLLAMA_TOOLS_MODEL:-granite3.1-moe:1b};
       echo "ollama pull $${OLLAMA_VISION_MODEL:-granite3.2-vision:2b}";
       ollama pull $${OLLAMA_VISION_MODEL:-granite3.2-vision:2b};
-
   container_name: ollama-init
   entrypoint: /bin/sh
   environment:
@@ -48,13 +47,46 @@ x-ollama: &service-ollama
   volumes:
     - ${OLLAMA_VOLUME:-ollama-data}:/root/.ollama
 
+# Base configuration for Tailscale service, aligned with n8n
+x-tailscale: &service-tailscale
+  cap_add:
+    - NET_ADMIN
+    - SYS_MODULE
+  devices:
+    - /dev/net/tun:/dev/net/tun
+  environment:
+    - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tsauthkey --accept-dns
+    - TS_STATE_DIR=/var/lib/tailscale
+    - TS_USERSPACE=false
+  image: tailscale/tailscale:${TAILSCALE_VERSION:-stable}
+  restart: unless-stopped
+  secrets:
+    - tsauthkey
+  volumes:
+    - tailscale-state:/var/lib/tailscale
+
+# Traefik labels for Ollama, aligned with n8n
+x-traefik-labels: &service-traefik-labels
+  - traefik.enable=${OLLAMA_ENABLE_TRAEFIK:-false}
+  - traefik.docker.network=${OLLAMA_NETWORK_NAME:-ollama-net}
+  - traefik.http.middlewares.ip-whitelist.ipallowlist.sourcerange=${IP_WHITELIST:-0.0.0.0/0}
+  - traefik.http.middlewares.ollama-redirect.redirectscheme.scheme=https
+  - traefik.http.routers.ollama.entrypoints=web
+  - traefik.http.routers.ollama.middlewares=ollama-redirect
+  - traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN:-localhost}`)
+  - traefik.http.routers.ollama-secure.entrypoints=websecure
+  - traefik.http.routers.ollama-secure.rule=Host(`ollama.${DOMAIN:-localhost}`)
+  - traefik.http.routers.ollama-secure.service=ollama
+  - traefik.http.routers.ollama-secure.tls=true
+  - traefik.http.services.ollama.loadbalancer.server.port=11434
+
 # Secret for Tailscale authentication key
 secrets:
   tsauthkey:
-    file: ${TSAUTHKEY_PATH:-tsauthkey}
+    file: ${TSAUTHKEY_PATH:-./secrets/tsauthkey}
 
 # ==============================================================================
-# Base Ollama Services (CPU, GPU-NVIDIA, GPU-AMD)
+# Local Ollama Services (CPU, GPU-NVIDIA, GPU-AMD)
 # ==============================================================================
 services:
   # Ollama service for CPU, exposing port 11434 and using ollama-network
@@ -100,6 +132,51 @@ services:
       - ollama-network
 
   # ==============================================================================
+  # Traefik-Enabled Ollama Services (CPU, GPU-NVIDIA, GPU-AMD)
+  # ==============================================================================
+  ollama-cpu-traefik:
+    <<: *service-ollama
+    profiles:
+      - traefik-cpu
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
+    networks:
+      - ollama-network
+    labels: *service-traefik-labels
+
+  ollama-nvidia-gpu-traefik:
+    <<: *service-ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities:
+                - gpu
+              count: 1
+              driver: nvidia
+    profiles:
+      - traefik-nvidia-gpu
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
+    networks:
+      - ollama-network
+    labels: *service-traefik-labels
+
+  ollama-amd-gpu-traefik:
+    <<: *service-ollama
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    image: ollama/ollama:rocm
+    profiles:
+      - traefik-amd-gpu
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
+    networks:
+      - ollama-network
+    labels: *service-traefik-labels
+
+  # ==============================================================================
   # Ollama Initialization Services (Pull Models for CPU, GPU-NVIDIA, GPU-AMD)
   # ==============================================================================
   ollama-init-pull-cpu:
@@ -125,6 +202,29 @@ services:
     profiles:
       - amd-gpu
 
+  ollama-init-pull-cpu-traefik:
+    <<: *init-ollama
+    depends_on:
+      - ollama-cpu-traefik
+    profiles:
+      - traefik-cpu
+
+  ollama-init-pull-nvidia-gpu-traefik:
+    <<: *init-ollama
+    depends_on:
+      - ollama-nvidia-gpu-traefik
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    profiles:
+      - traefik-nvidia-gpu
+
+  ollama-init-pull-amd-gpu-traefik:
+    <<: *init-ollama
+    depends_on:
+      - ollama-amd-gpu-traefik
+    image: ollama/ollama:rocm
+    profiles:
+      - traefik-amd-gpu
+
   # ==============================================================================
   # Tailscale-Enabled Ollama Services
   # ==============================================================================
@@ -142,6 +242,7 @@ services:
     image: ollama/ollama:${OLLAMA_VERSION:-latest}
     profiles:
       - tailscale-nvidia-gpu
+
   ollama-init-pull-amd-gpu-tailscale:
     <<: *init-ollama
     depends_on:
@@ -188,45 +289,18 @@ services:
       - tailscale-amd-gpu
 
   tailscale:
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
+    <<: *service-tailscale
     container_name: ollama-ts
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    environment:
-      - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tsauthkey
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
     hostname: ${TAILSCALE_HOSTNAME:-ollama}
-    image: tailscale/tailscale:${TAILSCALE_VERSION:-stable}
-    restart: unless-stopped
-    secrets:
-      - tsauthkey
-    volumes:
-      - tailscale-state:/var/lib/tailscale
+    networks:
+      - ollama-network
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
     profiles:
       - tailscale
       - tailscale-cpu
       - tailscale-nvidia-gpu
       - tailscale-amd-gpu
-    labels:
-      - traefik.enable=${OLLAMA_ENABLE_TRAEFIK:-false}
-      - traefik.docker.network=ollama-network
-      - traefik.http.middlewares.ip-whitelist.ipallowlist.sourcerange=${IP_WHITELIST:-0.0.0.0/0}
-      - traefik.http.middlewares.ollama-network-redirect.redirectscheme.scheme=https
-      - traefik.http.routers.ollama.entrypoints=web
-      - traefik.http.routers.ollama.middlewares=ollama-network-redirect
-      - traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN:-}`)
-      - traefik.http.routers.ollama-secure.entrypoints=websecure
-      - traefik.http.routers.ollama-secure.rule=Host(`ollama.${DOMAIN:-}`)
-      - traefik.http.routers.ollama-secure.service=ollama
-      - traefik.http.routers.ollama-secure.tls=true
-      - traefik.http.services.ollama.loadbalancer.server.port=11434
-    networks:
-      - ollama-network
-    ports:
-      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
 
 # ==============================================================================
 # Volumes and Networks
