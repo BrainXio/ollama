@@ -43,7 +43,7 @@ jobs:
             OLLAMA_NETWORK_NAME=ollama-net
             OLLAMA_NETWORK_EXTERNAL=false
 
-  validate-gpu-nvidia:
+  validate-nvidia-gpu:
     runs-on: ubuntu-latest
     needs: yamllint
     steps:
@@ -53,15 +53,15 @@ jobs:
       - name: Validate GPU NVIDIA configuration
         uses: ./.github/actions/validate-compose
         with:
-          profile: gpu-nvidia
-          output-file: gpu-nvidia-config.yml
+          profile: nvidia-gpu
+          output-file: nvidia-gpu-config.yml
           env: |
             OLLAMA_PORT=127.0.0.1:11434
             OLLAMA_VERSION=latest
             OLLAMA_NETWORK_NAME=ollama-net
             OLLAMA_NETWORK_EXTERNAL=false
 
-  validate-gpu-amd:
+  validate-amd-gpu:
     runs-on: ubuntu-latest
     needs: yamllint
     steps:
@@ -71,8 +71,8 @@ jobs:
       - name: Validate GPU AMD configuration
         uses: ./.github/actions/validate-compose
         with:
-          profile: gpu-amd
-          output-file: gpu-amd-config.yml
+          profile: amd-gpu
+          output-file: amd-gpu-config.yml
           env: |
             OLLAMA_PORT=127.0.0.1:11434
             OLLAMA_VERSION=latest
@@ -99,7 +99,7 @@ jobs:
             OLLAMA_NETWORK_EXTERNAL=false
             OLLAMA_ENABLE_TRAEFIK=false
 
-  validate-tailscale-gpu-nvidia:
+  validate-tailscale-nvidia-gpu:
     runs-on: ubuntu-latest
     needs: yamllint
     steps:
@@ -109,8 +109,8 @@ jobs:
       - name: Validate Tailscale GPU NVIDIA configuration
         uses: ./.github/actions/validate-compose
         with:
-          profile: tailscale-gpu-nvidia
-          output-file: tailscale-gpu-nvidia-config.yml
+          profile: tailscale-nvidia-gpu
+          output-file: tailscale-nvidia-gpu-config.yml
           env: |
             OLLAMA_PORT=127.0.0.1:11434
             OLLAMA_VERSION=latest
@@ -119,7 +119,7 @@ jobs:
             OLLAMA_NETWORK_EXTERNAL=false
             OLLAMA_ENABLE_TRAEFIK=false
 
-  validate-tailscale-gpu-amd:
+  validate-tailscale-amd-gpu:
     runs-on: ubuntu-latest
     needs: yamllint
     steps:
@@ -129,8 +129,8 @@ jobs:
       - name: Validate Tailscale GPU AMD configuration
         uses: ./.github/actions/validate-compose
         with:
-          profile: tailscale-gpu-amd
-          output-file: tailscale-gpu-amd-config.yml
+          profile: tailscale-amd-gpu
+          output-file: tailscale-amd-gpu-config.yml
           env: |
             OLLAMA_PORT=127.0.0.1:11434
             OLLAMA_VERSION=latest

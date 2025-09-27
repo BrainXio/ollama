@@ -21,7 +21,6 @@ x-init-ollama: &init-ollama
       ollama pull $${OLLAMA_TOOLS_MODEL:-granite3.1-moe:1b};
       echo "ollama pull $${OLLAMA_VISION_MODEL:-granite3.2-vision:2b}";
       ollama pull $${OLLAMA_VISION_MODEL:-granite3.2-vision:2b};
-
   container_name: ollama-init
   entrypoint: /bin/sh
   environment:
@@ -48,10 +47,28 @@ x-ollama: &service-ollama
   volumes:
     - ${OLLAMA_VOLUME:-ollama-data}:/root/.ollama
 
+# Base configuration for Tailscale service, aligned with n8n
+x-tailscale: &service-tailscale
+  cap_add:
+    - NET_ADMIN
+    - SYS_MODULE
+  devices:
+    - /dev/net/tun:/dev/net/tun
+  environment:
+    - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tsauthkey --accept-dns
+    - TS_STATE_DIR=/var/lib/tailscale
+    - TS_USERSPACE=false
+  image: tailscale/tailscale:${TAILSCALE_VERSION:-stable}
+  restart: unless-stopped
+  secrets:
+    - tsauthkey
+  volumes:
+    - tailscale-state:/var/lib/tailscale
+
 # Secret for Tailscale authentication key
 secrets:
   tsauthkey:
-    file: ${TSAUTHKEY_PATH:-tsauthkey}
+    file: ${TSAUTHKEY_PATH:-./secrets/tsauthkey}
 
 # ==============================================================================
 # Base Ollama Services (CPU, GPU-NVIDIA, GPU-AMD)
@@ -142,6 +159,7 @@ services:
     image: ollama/ollama:${OLLAMA_VERSION:-latest}
     profiles:
       - tailscale-nvidia-gpu
+
   ollama-init-pull-amd-gpu-tailscale:
     <<: *init-ollama
     depends_on:
@@ -188,45 +206,18 @@ services:
       - tailscale-amd-gpu
 
   tailscale:
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
+    <<: *service-tailscale
     container_name: ollama-ts
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    environment:
-      - TS_EXTRA_ARGS=--auth-key file:/run/secrets/tsauthkey
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
     hostname: ${TAILSCALE_HOSTNAME:-ollama}
-    image: tailscale/tailscale:${TAILSCALE_VERSION:-stable}
-    restart: unless-stopped
-    secrets:
-      - tsauthkey
-    volumes:
-      - tailscale-state:/var/lib/tailscale
+    networks:
+      - ollama-network
+    ports:
+      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
     profiles:
       - tailscale
       - tailscale-cpu
       - tailscale-nvidia-gpu
       - tailscale-amd-gpu
-    labels:
-      - traefik.enable=${OLLAMA_ENABLE_TRAEFIK:-false}
-      - traefik.docker.network=ollama-network
-      - traefik.http.middlewares.ip-whitelist.ipallowlist.sourcerange=${IP_WHITELIST:-0.0.0.0/0}
-      - traefik.http.middlewares.ollama-network-redirect.redirectscheme.scheme=https
-      - traefik.http.routers.ollama.entrypoints=web
-      - traefik.http.routers.ollama.middlewares=ollama-network-redirect
-      - traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN:-}`)
-      - traefik.http.routers.ollama-secure.entrypoints=websecure
-      - traefik.http.routers.ollama-secure.rule=Host(`ollama.${DOMAIN:-}`)
-      - traefik.http.routers.ollama-secure.service=ollama
-      - traefik.http.routers.ollama-secure.tls=true
-      - traefik.http.services.ollama.loadbalancer.server.port=11434
-    networks:
-      - ollama-network
-    ports:
-      - ${OLLAMA_PORT:-127.0.0.1:11434}:11434
 
 # ==============================================================================
 # Volumes and Networks

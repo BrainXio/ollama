@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Hardcoded base profiles
-declare -a BASE_PROFILES=("cpu" "gpu-nvidia" "gpu-amd" "tailscale-cpu" "tailscale-gpu-nvidia" "tailscale-gpu-amd")
+declare -a BASE_PROFILES=("cpu" "nvidia-gpu" "amd-gpu" "tailscale-cpu" "tailscale-nvidia-gpu" "tailscale-amd-gpu")
 
 # Function to detect NVIDIA GPU and Container Toolkit configuration
 detect_nvidia() {
@@ -51,12 +51,12 @@ for PROFILE in "${BASE_PROFILES[@]}"; do
     "cpu"|"tailscale-cpu")
       APPLICABLE_PROFILES+=("$PROFILE")  # Always applicable
       ;;
-    "gpu-nvidia"|"tailscale-gpu-nvidia")
+    "nvidia-gpu"|"tailscale-nvidia-gpu")
       if detect_nvidia; then
         APPLICABLE_PROFILES+=("$PROFILE")
       fi
       ;;
-    "gpu-amd"|"tailscale-gpu-amd")
+    "amd-gpu"|"tailscale-amd-gpu")
       if detect_amd_rocm; then
         APPLICABLE_PROFILES+=("$PROFILE")
       fi
@@ -86,13 +86,13 @@ done
 
 # Set OLLAMA_VERSION
 if [ -n "$VERSION_ARG" ]; then
-  OLLAMA_VERSION="$VERSION_ARG"
+  OLLAMA_VERSION="${VERSION_ARG#v}"  # Strip leading 'v' if present
   echo "Using specified version: $OLLAMA_VERSION"
 else
   # Fetch the latest tagged release from GitHub
   LATEST_RELEASE=$(curl -s https://api.github.com/repos/ollama/ollama/releases/latest)
   if [ -n "$LATEST_RELEASE" ]; then
-    OLLAMA_VERSION=$(echo "$LATEST_RELEASE" | grep -o '"tag_name": *"[^"]*' | grep -o '[^"]*$')
+    OLLAMA_VERSION=$(echo "$LATEST_RELEASE" | grep -o '"tag_name": *"[^"]*' | grep -o '[^"]*$' | sed 's/^v//')
     if [ -n "$OLLAMA_VERSION" ]; then
       echo "Using latest tagged release: $OLLAMA_VERSION"
       # Extract and save release notes to ollama-deploy.md
@@ -131,11 +131,11 @@ elif ! [[ "$CHOICE" =~ ^[0-9]+$ ]] || [ "$CHOICE" -lt 1 ] || [ "$CHOICE" -gt ${#
 fi
 
 PROFILE=${APPLICABLE_PROFILES[$((CHOICE-1))]}
-OLLAMA_NAME_SUFFIX=""
+TAILSCALE_HOSTNAME="$(hostname)-ollama"
 
 # Check for Tailscale profile and handle tsauthkey
 if [[ "$PROFILE" == *"tailscale"* ]]; then
-  TSAUTHKEY_PATH="${TSAUTHKEY_PATH:-tsauthkey}"  # Default to tsauthkey if not set in .env
+  TSAUTHKEY_PATH="${TSAUTHKEY_PATH:-./secrets/tsauthkey}"  # Default to ./secrets/tsauthkey if not set in .env
   if [ ! -f "$TSAUTHKEY_PATH" ]; then
     echo "Error: tsauthkey file not found at $TSAUTHKEY_PATH"
     echo "A Tailscale authentication key is required. Generate one at:"
@@ -159,27 +159,34 @@ if [[ "$PROFILE" == *"tailscale"* ]]; then
   fi
 fi
 
-# Detect GPU and VRAM if profile contains 'gpu'
+# Detect GPU for logging purposes only
 if [[ "$PROFILE" == *"gpu"* ]]; then
-  VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1)
-  if [ -n "$VRAM_MB" ]; then
-    # Convert MB to GB with ceiling to avoid truncation
-    VRAM_GB=$(( (VRAM_MB + 1023) / 1024 )) # Ceiling division: adds 1023 to round up
-    OLLAMA_NAME_SUFFIX="-gpu${VRAM_GB}"
-    echo "Raw GPU VRAM detected: ${VRAM_MB} MB" # Debug output
-  else
-    echo "Warning: NVIDIA GPU not detected or nvidia-smi not available, using default suffix"
-    OLLAMA_NAME_SUFFIX="-gpu0"
+  if [[ "$PROFILE" == *"nvidia"* ]]; then
+    GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -n 1)
+    if [ -n "$GPU_NAME" ]; then
+      echo "NVIDIA GPU detected: $GPU_NAME"
+      VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -n 1)
+      if [ -n "$VRAM_MB" ]; then
+        VRAM_GB=$(( (VRAM_MB + 1023) / 1024 )) # Ceiling division
+        echo "Raw GPU VRAM detected: ${VRAM_MB} MB"
+      fi
+    else
+      echo "Warning: NVIDIA GPU not detected or nvidia-smi not available"
+    fi
+  elif [[ "$PROFILE" == *"amd"* ]]; then
+    GPU_NAME=$(rocm-smi --showproductname 2>/dev/null | grep "Card model" | cut -d ':' -f2- | tr -d '[:space:]')
+    if [ -n "$GPU_NAME" ]; then
+      echo "AMD ROCm GPU detected: $GPU_NAME"
+    else
+      echo "Warning: AMD ROCm GPU not detected or rocm-smi not available"
+    fi
   fi
 else
-  # Detect CPU cores and RAM for non-GPU profiles
   CPU_CORES=$(nproc)
-  RAM_TOTAL=$(free -g | grep "Mem:" | awk '{print $2}') # Total RAM in GB
-  if [ -n "$CPU_CORES" ] && [ -n "$RAM_TOTAL" ]; then
-    OLLAMA_NAME_SUFFIX="-cpu${CPU_CORES}-ram${RAM_TOTAL}"
+  if [ -n "$CPU_CORES" ]; then
+    echo "Detected CPU Cores: ${CPU_CORES}"
   else
-    echo "Warning: Unable to detect CPU cores or RAM, using default suffix"
-    OLLAMA_NAME_SUFFIX="-cpu1-ram1"
+    echo "Warning: Unable to detect CPU cores"
   fi
 fi
 
@@ -187,19 +194,23 @@ fi
 echo "Selected Profile: $PROFILE"
 echo "OLLAMA_VERSION: $OLLAMA_VERSION"
 if [[ "$PROFILE" == *"gpu"* ]]; then
-  echo "Detected GPU VRAM: ${VRAM_GB:-N/A} GB"
+  if [[ "$PROFILE" == *"nvidia"* ]]; then
+    echo "Detected GPU: ${GPU_NAME:-N/A}"
+    echo "Detected GPU VRAM: ${VRAM_GB:-N/A} GB"
+  else
+    echo "Detected AMD ROCm GPU: ${GPU_NAME:-N/A}"
+  fi
 else
   echo "Detected CPU Cores: ${CPU_CORES:-N/A}"
-  echo "Detected RAM: ${RAM_TOTAL:-N/A} GB"
 fi
-echo "Proposed OLLAMA_NAME_SUFFIX: $OLLAMA_NAME_SUFFIX"
+echo "Proposed TAILSCALE_HOSTNAME: $TAILSCALE_HOSTNAME"
 if [[ "$PROFILE" == *"tailscale"* ]]; then
   echo "TSAUTHKEY_PATH: $TSAUTHKEY_PATH"
 fi
 
-# Export OLLAMA_NAME_SUFFIX for Docker Compose to use
-export OLLAMA_NAME_SUFFIX
+# Export TAILSCALE_HOSTNAME and OLLAMA_VERSION for Docker Compose to use
+export TAILSCALE_HOSTNAME
+export OLLAMA_VERSION
 
-# Deploy with Docker Compose, applying OLLAMA_NAME_SUFFIX
-# Ensure docker-compose.yml uses OLLAMA_NAME_SUFFIX (e.g., as an environment variable or in service naming)
+# Deploy with Docker Compose, applying TAILSCALE_HOSTNAME and OLLAMA_VERSION
 docker compose --profile "$PROFILE" up -d --force-recreate
