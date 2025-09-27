@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Hardcoded base profiles
-declare -a BASE_PROFILES=("cpu" "nvidia-gpu" "amd-gpu" "tailscale-cpu" "tailscale-nvidia-gpu" "tailscale-amd-gpu")
+declare -a BASE_PROFILES=("cpu" "nvidia-gpu" "amd-gpu" "traefik-cpu" "traefik-nvidia-gpu" "traefik-amd-gpu" "tailscale-cpu" "tailscale-nvidia-gpu" "tailscale-amd-gpu")
 
 # Function to detect NVIDIA GPU and Container Toolkit configuration
 detect_nvidia() {
@@ -48,15 +48,15 @@ declare -a APPLICABLE_PROFILES=()
 
 for PROFILE in "${BASE_PROFILES[@]}"; do
   case "$PROFILE" in
-    "cpu"|"tailscale-cpu")
+    "cpu"|"traefik-cpu"|"tailscale-cpu")
       APPLICABLE_PROFILES+=("$PROFILE")  # Always applicable
       ;;
-    "nvidia-gpu"|"tailscale-nvidia-gpu")
+    "nvidia-gpu"|"traefik-nvidia-gpu"|"tailscale-nvidia-gpu")
       if detect_nvidia; then
         APPLICABLE_PROFILES+=("$PROFILE")
       fi
       ;;
-    "amd-gpu"|"tailscale-amd-gpu")
+    "amd-gpu"|"traefik-amd-gpu"|"tailscale-amd-gpu")
       if detect_amd_rocm; then
         APPLICABLE_PROFILES+=("$PROFILE")
       fi

@@ -79,6 +79,69 @@ jobs:
             OLLAMA_NETWORK_NAME=ollama-net
             OLLAMA_NETWORK_EXTERNAL=false
 
+  validate-traefik-cpu:
+    runs-on: ubuntu-latest
+    needs: yamllint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Traefik CPU configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: traefik-cpu
+          output-file: traefik-cpu-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=true
+            DOMAIN=localhost
+            IP_WHITELIST=0.0.0.0/0
+
+  validate-traefik-nvidia-gpu:
+    runs-on: ubuntu-latest
+    needs: yamllint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Traefik NVIDIA GPU configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: traefik-nvidia-gpu
+          output-file: traefik-nvidia-gpu-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=true
+            DOMAIN=localhost
+            IP_WHITELIST=0.0.0.0/0
+
+  validate-traefik-amd-gpu:
+    runs-on: ubuntu-latest
+    needs: yamllint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Traefik AMD GPU configuration
+        uses: ./.github/actions/validate-compose
+        with:
+          profile: traefik-amd-gpu
+          output-file: traefik-amd-gpu-config.yml
+          env: |
+            OLLAMA_PORT=127.0.0.1:11434
+            OLLAMA_VERSION=latest
+            OLLAMA_NETWORK_NAME=ollama-net
+            OLLAMA_NETWORK_EXTERNAL=false
+            OLLAMA_ENABLE_TRAEFIK=true
+            DOMAIN=localhost
+            IP_WHITELIST=0.0.0.0/0
+
   validate-tailscale-cpu:
     runs-on: ubuntu-latest
     needs: yamllint
